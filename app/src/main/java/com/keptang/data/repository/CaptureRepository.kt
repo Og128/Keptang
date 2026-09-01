@@ -6,6 +6,7 @@ import com.keptang.data.db.CaptureEntity
 import com.keptang.data.db.CaptureStatus
 import kotlinx.coroutines.flow.Flow
 import java.time.Instant
+import java.util.UUID
 
 /** Expense rows for a deleted capture are removed automatically via [com.keptang.data.db.ExpenseEntity]'s cascading foreign key. */
 class CaptureRepository(
@@ -49,6 +50,31 @@ class CaptureRepository(
                 updatedAtEpochMillis = Instant.now().toEpochMilli()
             )
         )
+    }
+
+    /**
+     * Creates a placeholder capture row for a manually-typed expense (there is no audio and
+     * nothing to transcribe). [ExpenseEntity][com.keptang.data.db.ExpenseEntity] requires a
+     * parent capture, so manual entries get one of these instead of a real voice capture.
+     */
+    suspend fun createManualEntry(timeZoneId: String): String {
+        val id = UUID.randomUUID().toString()
+        val now = Instant.now().toEpochMilli()
+        captureDao.insert(
+            CaptureEntity(
+                id = id,
+                capturedAtEpochMillis = now,
+                timeZoneId = timeZoneId,
+                audioFilePath = "",
+                durationMillis = 0,
+                rawTranscript = "Manually entered",
+                status = CaptureStatus.PROCESSED,
+                errorMessage = null,
+                createdAtEpochMillis = now,
+                updatedAtEpochMillis = now
+            )
+        )
+        return id
     }
 
     /** Attempts to atomically move a capture into TRANSCRIBING. False means it is already being processed or done. */

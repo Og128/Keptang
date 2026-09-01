@@ -7,10 +7,16 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.Card
+import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
@@ -22,34 +28,45 @@ import com.keptang.ui.common.formatDateTime
 import com.keptang.ui.common.formatMoney
 
 @Composable
-fun ExpensesScreen(viewModel: ExpensesViewModel = viewModel(factory = ExpensesViewModel.Factory)) {
+fun ExpensesScreen(
+    onAddExpense: () -> Unit,
+    viewModel: ExpensesViewModel = viewModel(factory = ExpensesViewModel.Factory)
+) {
     val expenses by viewModel.expenses.collectAsStateWithLifecycle()
 
-    if (expenses.isEmpty()) {
-        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            Text(stringResource(R.string.expenses_empty), style = MaterialTheme.typography.bodyLarge)
+    Scaffold(
+        floatingActionButton = {
+            FloatingActionButton(onClick = onAddExpense) {
+                Icon(Icons.Filled.Add, contentDescription = stringResource(R.string.manual_add_title))
+            }
         }
-        return
-    }
+    ) { padding ->
+        if (expenses.isEmpty()) {
+            Box(Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.Center) {
+                Text(stringResource(R.string.expenses_empty), style = MaterialTheme.typography.bodyLarge)
+            }
+            return@Scaffold
+        }
 
-    LazyColumn(Modifier.fillMaxSize().padding(12.dp)) {
-        items(expenses, key = { it.id }) { expense ->
-            Card(Modifier.fillMaxWidth().padding(vertical = 6.dp)) {
-                Column(Modifier.padding(12.dp)) {
-                    Text(
-                        formatMoney(expense.amountMinorUnits, expense.currencyCode),
-                        style = MaterialTheme.typography.titleMedium
-                    )
-                    Text(
-                        "${expense.category} · ${expense.merchant ?: "-"}",
-                        style = MaterialTheme.typography.bodyMedium
-                    )
-                    Text(
-                        formatDateTime(expense.occurredAtEpochMillis, expense.timeZoneId) +
-                            (expense.account?.let { " · $it" } ?: "") +
-                            (expense.paymentMethod?.let { " · $it" } ?: ""),
-                        style = MaterialTheme.typography.bodySmall
-                    )
+        LazyColumn(Modifier.fillMaxSize().padding(padding).padding(12.dp)) {
+            items(expenses, key = { it.id }) { expense ->
+                Card(Modifier.fillMaxWidth().padding(vertical = 6.dp)) {
+                    Column(Modifier.padding(12.dp)) {
+                        Text(
+                            formatMoney(expense.amountMinorUnits, expense.currencyCode),
+                            style = MaterialTheme.typography.titleMedium
+                        )
+                        Text(
+                            "${expense.category} · ${expense.merchant ?: "-"}",
+                            style = MaterialTheme.typography.bodyMedium
+                        )
+                        Text(
+                            formatDateTime(expense.occurredAtEpochMillis, expense.timeZoneId) +
+                                (expense.account?.let { " · $it" } ?: "") +
+                                (expense.paymentMethod?.let { " · $it" } ?: ""),
+                            style = MaterialTheme.typography.bodySmall
+                        )
+                    }
                 }
             }
         }

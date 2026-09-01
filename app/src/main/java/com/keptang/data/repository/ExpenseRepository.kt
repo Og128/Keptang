@@ -6,6 +6,7 @@ import com.keptang.data.db.ReviewStatus
 import com.keptang.parser.ParsedExpense
 import kotlinx.coroutines.flow.Flow
 import java.time.Instant
+import java.util.UUID
 
 class ExpenseRepository(private val expenseDao: ExpenseDao) {
 
@@ -46,6 +47,39 @@ class ExpenseRepository(private val expenseDao: ExpenseDao) {
         }
         expenseDao.replaceForCapture(captureId, entities)
         return entities
+    }
+
+    /** Inserts a hand-typed expense under [captureId], pre-approved since a human just entered it. */
+    suspend fun createManual(
+        captureId: String,
+        amountMinorUnits: Long,
+        currencyCode: String,
+        occurredAtEpochMillis: Long,
+        timeZoneId: String,
+        category: String,
+        account: String?,
+        paymentMethod: String?,
+        merchant: String?
+    ): ExpenseEntity {
+        val now = Instant.now().toEpochMilli()
+        val entity = ExpenseEntity(
+            id = UUID.randomUUID().toString(),
+            captureId = captureId,
+            amountMinorUnits = amountMinorUnits,
+            currencyCode = currencyCode,
+            occurredAtEpochMillis = occurredAtEpochMillis,
+            timeZoneId = timeZoneId,
+            category = category,
+            account = account,
+            paymentMethod = paymentMethod,
+            merchant = merchant,
+            confidence = 1.0f,
+            reviewStatus = ReviewStatus.APPROVED,
+            createdAtEpochMillis = now,
+            updatedAtEpochMillis = now
+        )
+        expenseDao.insertAll(listOf(entity))
+        return entity
     }
 
     suspend fun approve(expenseId: String) = updateReviewStatus(expenseId, ReviewStatus.APPROVED)

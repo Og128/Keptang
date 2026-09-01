@@ -40,9 +40,20 @@
     <string name="action_delete">Delete</string>
     <string name="action_approve">Approve</string>
     <string name="action_edit">Edit</string>
+    <string name="action_save">Save</string>
+    <string name="action_cancel">Cancel</string>
 
     <string name="settings_default_currency">Default currency</string>
     <string name="settings_time_zone">Time zone</string>
     <string name="settings_default_account">Default account</string>
     <string name="settings_audio_retention">Audio retention (days)</string>
+
+    <string name="manual_add_title">Add expense</string>
+    <string name="manual_add_amount">Amount</string>
+    <string name="manual_add_currency">Currency</string>
+    <string name="manual_add_category">Category</string>
+    <string name="manual_add_merchant">Merchant (optional)</string>
+    <string name="manual_add_account">Account (optional)</string>
+    <string name="manual_add_payment_method">Payment method (optional)</string>
+    <string name="manual_add_default_category">Uncategorized</string>
 </resources>

@@ -13,6 +13,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.res.stringResource
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
@@ -22,6 +23,7 @@ import androidx.navigation.compose.rememberNavController
 import com.keptang.R
 import com.keptang.ui.capturedetail.CaptureDetailScreen
 import com.keptang.ui.expenses.ExpensesScreen
+import com.keptang.ui.expenses.ManualExpenseScreen
 import com.keptang.ui.inbox.InboxScreen
 import com.keptang.ui.review.ReviewScreen
 import com.keptang.ui.settings.SettingsScreen
@@ -32,6 +34,7 @@ object Routes {
     const val REVIEW = "review"
     const val SETTINGS = "settings"
     const val CAPTURE_DETAIL = "capture/{captureId}"
+    const val ADD_EXPENSE = "add_expense"
 
     fun captureDetail(captureId: String) = "capture/$captureId"
 }
@@ -79,12 +82,20 @@ fun KeptangNavHost(navController: NavHostController = rememberNavController(), s
             composable(Routes.INBOX) {
                 InboxScreen(onOpenCapture = { id -> navController.navigate(Routes.captureDetail(id)) })
             }
-            composable(Routes.EXPENSES) { ExpensesScreen() }
+            composable(Routes.EXPENSES) {
+                ExpensesScreen(onAddExpense = { navController.navigate(Routes.ADD_EXPENSE) })
+            }
             composable(Routes.REVIEW) { ReviewScreen() }
             composable(Routes.SETTINGS) { SettingsScreen() }
             composable(Routes.CAPTURE_DETAIL) { backStack ->
                 val captureId = backStack.arguments?.getString("captureId") ?: return@composable
                 CaptureDetailScreen(captureId = captureId, onDeleted = { navController.popBackStack() })
+            }
+            composable(Routes.ADD_EXPENSE) {
+                ManualExpenseScreen(
+                    onSaved = { navController.popBackStack() },
+                    onCancel = { navController.popBackStack() }
+                )
             }
         }
     }
