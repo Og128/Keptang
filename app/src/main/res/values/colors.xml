@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="keptang_primary">#0F6B5C</color>
+    <color name="keptang_on_primary">#FFFFFF</color>
+    <color name="keptang_background">#F4FBF9</color>
+    <color name="widget_background">#0F6B5C</color>
+    <color name="widget_icon_tint">#FFFFFF</color>
+</resources>

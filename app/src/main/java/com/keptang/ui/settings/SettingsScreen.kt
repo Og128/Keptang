@@ -1,0 +1,53 @@
+package com.keptang.ui.settings
+
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.keptang.R
+
+@Composable
+fun SettingsScreen(viewModel: SettingsViewModel = viewModel(factory = SettingsViewModel.Factory)) {
+    val settings by viewModel.settings.collectAsStateWithLifecycle()
+
+    Column(Modifier.fillMaxWidth().padding(16.dp)) {
+        Text("Settings", style = MaterialTheme.typography.headlineSmall)
+
+        OutlinedTextField(
+            value = settings.currencyCode,
+            onValueChange = viewModel::setCurrency,
+            label = { Text(stringResource(R.string.settings_default_currency)) },
+            modifier = Modifier.fillMaxWidth().padding(top = 16.dp)
+        )
+        OutlinedTextField(
+            value = settings.timeZoneId,
+            onValueChange = viewModel::setTimeZone,
+            label = { Text(stringResource(R.string.settings_time_zone)) },
+            modifier = Modifier.fillMaxWidth().padding(top = 16.dp)
+        )
+        OutlinedTextField(
+            value = settings.defaultAccount,
+            onValueChange = viewModel::setDefaultAccount,
+            label = { Text(stringResource(R.string.settings_default_account)) },
+            modifier = Modifier.fillMaxWidth().padding(top = 16.dp)
+        )
+        OutlinedTextField(
+            value = settings.audioRetentionDays.toString(),
+            onValueChange = { text -> text.toIntOrNull()?.let(viewModel::setAudioRetentionDays) },
+            label = { Text(stringResource(R.string.settings_audio_retention)) },
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+            modifier = Modifier.fillMaxWidth().padding(top = 16.dp)
+        )
+    }
+}
