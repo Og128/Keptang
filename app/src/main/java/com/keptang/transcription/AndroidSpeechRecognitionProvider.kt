@@ -40,7 +40,8 @@ class AndroidSpeechRecognitionProvider(private val context: Context) : Transcrip
         }
     }
 
-    override suspend fun listen(): TranscriptionResult = withContext<TranscriptionResult>(Dispatchers.Main) {
+    override suspend fun listen(onEndOfSpeech: () -> Unit): TranscriptionResult = withContext<TranscriptionResult>(Dispatchers.Main) {
+        val endOfSpeechCallback = onEndOfSpeech
         val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
             putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
             putExtra(RecognizerIntent.EXTRA_LANGUAGE, RECOGNITION_LANGUAGE)
@@ -91,7 +92,7 @@ class AndroidSpeechRecognitionProvider(private val context: Context) : Transcrip
                 override fun onBeginningOfSpeech() = Unit
                 override fun onRmsChanged(rmsdB: Float) = Unit
                 override fun onBufferReceived(buffer: ByteArray?) = Unit
-                override fun onEndOfSpeech() = Unit
+                override fun onEndOfSpeech() = endOfSpeechCallback()
                 override fun onPartialResults(partialResults: Bundle?) = Unit
                 override fun onEvent(eventType: Int, params: Bundle?) = Unit
             })

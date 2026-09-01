@@ -15,8 +15,14 @@ interface TranscriptionProvider {
     /**
      * Starts listening and suspends until a final result, error, or [stopListening]/[cancel]
      * ends the session. Must only be called after [isAvailable] returned true.
+     *
+     * [onEndOfSpeech] fires as soon as the recognizer's own endpointer decides the user has
+     * stopped talking - well before the final result is ready. Callers that are also running
+     * their own parallel audio capture (see [com.keptang.capture.VoiceCaptureService]) can use
+     * this as the signal to stop that capture too, since the recognizer's endpointing is far
+     * more robust to background noise than a raw amplitude threshold.
      */
-    suspend fun listen(): TranscriptionResult
+    suspend fun listen(onEndOfSpeech: () -> Unit = {}): TranscriptionResult
 
     /** Requests a graceful end to the current [listen] call, returning whatever was heard so far. */
     fun stopListening()

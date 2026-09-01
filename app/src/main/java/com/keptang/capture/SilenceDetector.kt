@@ -8,6 +8,11 @@ import kotlin.math.sqrt
  * Leading silence (before any speech has been heard at all) never triggers a stop, so recording
  * doesn't immediately end if the user takes a beat to start talking.
  *
+ * This is a fallback for when no speech recognizer is available (see
+ * [AudioRecorderController]'s class doc) - real speech RMS overlaps enough with background noise
+ * RMS on real devices/mics that a from-scratch amplitude threshold, however well calibrated,
+ * can't reliably tell "quiet syllable" from "silence" the way a recognizer's own endpointer can.
+ *
  * A single fixed RMS threshold isn't reliable across devices/rooms - mic sensitivity and ambient
  * noise floor vary enough that a constant which works in one environment can sit permanently
  * below the ambient level in another, in which case "speech" never stops being detected and

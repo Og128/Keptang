@@ -17,8 +17,14 @@ enum class StopReason { SILENCE, MANUAL, MAX_DURATION, CANCELLED, ERROR }
 
 /**
  * Captures raw microphone audio straight to a WAV file using [AudioRecord], so the recording is
- * durably saved incrementally rather than depending on any recognizer to persist it. Runs its
- * own amplitude-based [SilenceDetector] check on every chunk it reads.
+ * durably saved incrementally rather than depending on any recognizer to persist it.
+ *
+ * Two independent signals can end recording on "silence": the live speech recognizer's own
+ * endpointer (via [requestSpeechEndedStop], wired from [android.speech.SpeechRecognizer]'s
+ * `onEndOfSpeech` by the caller) and this class's own amplitude-based [SilenceDetector], which
+ * runs as a fallback in case no recognizer is available. The recognizer's endpointing is far
+ * more robust to background noise - it's not just an amplitude threshold - so it's expected to
+ * win the race in the common case.
  */
 class AudioRecorderController {
 
@@ -31,6 +37,7 @@ class AudioRecorderController {
 
     @Volatile private var manualStopRequested = false
     @Volatile private var cancelRequested = false
+    @Volatile private var speechEndedStopRequested = false
     @Volatile private var audioRecord: AudioRecord? = null
 
     fun requestManualStop() {
@@ -39,6 +46,12 @@ class AudioRecorderController {
 
     fun requestCancel() {
         cancelRequested = true
+    }
+
+    /** Signals that an external, non-amplitude-based detector (the speech recognizer's own
+     * endpointer) has decided the user stopped talking. */
+    fun requestSpeechEndedStop() {
+        speechEndedStopRequested = true
     }
 
     /**
@@ -53,6 +66,7 @@ class AudioRecorderController {
     ): RecordingOutcome = withContext(Dispatchers.IO) {
         manualStopRequested = false
         cancelRequested = false
+        speechEndedStopRequested = false
         silenceDetector.reset()
 
         val chunkSamples = (SAMPLE_RATE_HZ * CHUNK_DURATION_MILLIS / 1000L).toInt()
@@ -100,6 +114,10 @@ class AudioRecorderController {
                     }
                     if (manualStopRequested) {
                         stopReason = StopReason.MANUAL
+                        break@loop
+                    }
+                    if (speechEndedStopRequested) {
+                        stopReason = StopReason.SILENCE
                         break@loop
                     }
                     if (SystemClock.elapsedRealtime() - startElapsed >= maxDurationMillis) {

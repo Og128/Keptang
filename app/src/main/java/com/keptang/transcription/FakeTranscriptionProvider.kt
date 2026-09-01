@@ -20,7 +20,7 @@ class FakeTranscriptionProvider(
 
     override suspend fun isAvailable(): Boolean = available
 
-    override suspend fun listen(): TranscriptionResult {
+    override suspend fun listen(onEndOfSpeech: () -> Unit): TranscriptionResult {
         listenCallCount++
         if (!available) return TranscriptionResult.Unavailable("Fake provider configured as unavailable")
         return result

@@ -91,7 +91,11 @@ class VoiceCaptureService : Service() {
 
             val transcriptionProvider = ServiceLocator.transcriptionProvider
             val providerAvailable = runCatching { transcriptionProvider.isAvailable() }.getOrDefault(false)
-            val recognitionDeferred = if (providerAvailable) async { transcriptionProvider.listen() } else null
+            val recognitionDeferred = if (providerAvailable) {
+                async { transcriptionProvider.listen(onEndOfSpeech = { recorder.requestSpeechEndedStop() }) }
+            } else {
+                null
+            }
 
             val outcome = recorder.record(
                 outputFile = audioFile,
