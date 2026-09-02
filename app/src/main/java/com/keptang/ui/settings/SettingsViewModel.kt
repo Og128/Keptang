@@ -22,6 +22,8 @@ class SettingsViewModel(private val settingsRepository: SettingsRepository) : Vi
     fun setDefaultAccount(account: String) = viewModelScope.launch { settingsRepository.setDefaultAccount(account) }
     fun setAudioRetentionDays(days: Int) = viewModelScope.launch { settingsRepository.setAudioRetentionDays(days) }
     fun setLanguage(code: String) = viewModelScope.launch { settingsRepository.setLanguage(code) }
+    fun setPreferredCategories(categories: List<String>) =
+        viewModelScope.launch { settingsRepository.setPreferredCategories(categories) }
 
     companion object {
         val Factory = viewModelFactory {

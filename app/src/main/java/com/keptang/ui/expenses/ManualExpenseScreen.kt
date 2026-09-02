@@ -11,6 +11,9 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
@@ -29,6 +32,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.keptang.R
 import com.keptang.ui.common.parseMoneyInput
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ManualExpenseScreen(
     onSaved: () -> Unit,
@@ -40,6 +44,7 @@ fun ManualExpenseScreen(
     var amountText by remember { mutableStateOf("") }
     var currencyCode by remember(settings.currencyCode) { mutableStateOf(settings.currencyCode) }
     var category by remember { mutableStateOf("") }
+    var categoryMenuExpanded by remember { mutableStateOf(false) }
     var merchant by remember { mutableStateOf("") }
     var account by remember(settings.defaultAccount) { mutableStateOf(settings.defaultAccount) }
     var paymentMethod by remember { mutableStateOf("") }
@@ -71,12 +76,33 @@ fun ManualExpenseScreen(
                 modifier = Modifier.width(100.dp).padding(start = 8.dp)
             )
         }
-        OutlinedTextField(
-            value = category,
-            onValueChange = { category = it },
-            label = { Text(stringResource(R.string.manual_add_category)) },
+        val categorySuggestions = settings.categories.filter { it.contains(category, ignoreCase = true) }
+        ExposedDropdownMenuBox(
+            expanded = categoryMenuExpanded && categorySuggestions.isNotEmpty(),
+            onExpandedChange = { categoryMenuExpanded = it },
             modifier = Modifier.fillMaxWidth().padding(top = 8.dp)
-        )
+        ) {
+            OutlinedTextField(
+                value = category,
+                onValueChange = { category = it; categoryMenuExpanded = true },
+                label = { Text(stringResource(R.string.manual_add_category)) },
+                modifier = Modifier.fillMaxWidth().menuAnchor()
+            )
+            ExposedDropdownMenu(
+                expanded = categoryMenuExpanded && categorySuggestions.isNotEmpty(),
+                onDismissRequest = { categoryMenuExpanded = false }
+            ) {
+                categorySuggestions.forEach { suggestion ->
+                    DropdownMenuItem(
+                        text = { Text(suggestion) },
+                        onClick = {
+                            category = suggestion
+                            categoryMenuExpanded = false
+                        }
+                    )
+                }
+            }
+        }
         OutlinedTextField(
             value = merchant,
             onValueChange = { merchant = it },
