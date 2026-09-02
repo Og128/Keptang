@@ -24,6 +24,8 @@ class ExpenseRepository(private val expenseDao: ExpenseDao) {
     fun observeByCaptureId(captureId: String): Flow<List<ExpenseEntity>> =
         expenseDao.observeByCaptureId(captureId)
 
+    fun observeDistinctCategories(): Flow<List<String>> = expenseDao.observeDistinctCategories()
+
     /** Persists parser output for one capture, replacing any prior attempt for the same capture. */
     suspend fun saveParsedExpenses(captureId: String, parsed: List<ParsedExpense>): List<ExpenseEntity> {
         val now = Instant.now().toEpochMilli()

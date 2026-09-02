@@ -15,4 +15,10 @@ class Converters {
 
     @TypeConverter
     fun toReviewStatus(value: String): ReviewStatus = ReviewStatus.valueOf(value)
+
+    @TypeConverter
+    fun fromBudgetPeriodType(value: BudgetPeriodType): String = value.name
+
+    @TypeConverter
+    fun toBudgetPeriodType(value: String): BudgetPeriodType = BudgetPeriodType.valueOf(value)
 }

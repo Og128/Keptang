@@ -5,6 +5,7 @@ import com.keptang.capture.AudioFileStore
 import com.keptang.capture.CaptureProcessor
 import com.keptang.data.db.KeptangDatabase
 import com.keptang.data.repository.AppSettings
+import com.keptang.data.repository.BudgetRepository
 import com.keptang.data.repository.CaptureRepository
 import com.keptang.data.repository.ExpenseRepository
 import com.keptang.data.repository.SettingsRepository
@@ -55,6 +56,8 @@ object ServiceLocator {
     }
 
     val expenseRepository: ExpenseRepository by lazy { ExpenseRepository(database.expenseDao()) }
+
+    val budgetRepository: BudgetRepository by lazy { BudgetRepository(database.budgetDao()) }
 
     val captureRepository: CaptureRepository by lazy {
         CaptureRepository(database.captureDao(), audioFileStore)

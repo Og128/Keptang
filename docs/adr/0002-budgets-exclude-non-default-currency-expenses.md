@@ -1,0 +1,3 @@
+# Budgets exclude non-default-currency Expenses instead of converting them
+
+Expenses each carry their own currency code with no enforcement against the app's Default Currency, and the app has no exchange-rate source anywhere. Budget totals only include Expenses recorded in the Default Currency; Expenses in any other currency are excluded from the sum but explicitly surfaced to the user (e.g. "2 expenses in USD not counted toward this budget") rather than silently dropped. Real FX conversion was rejected for this pass — it needs a rate source, staleness/caching, and rounding rules, a materially bigger feature than a first budgeting pass; silently excluding mismatched Expenses was also rejected because it would make budget totals quietly wrong with no indication why.

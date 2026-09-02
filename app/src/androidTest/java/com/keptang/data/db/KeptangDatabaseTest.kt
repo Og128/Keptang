@@ -123,4 +123,36 @@ class KeptangDatabaseTest {
 
         assertTrue(db.expenseDao().getByCaptureId("c5").isEmpty())
     }
+
+    private fun sampleBudget(id: String, category: String?) = BudgetEntity(
+        id = id,
+        category = category,
+        amountMinorUnits = 100_00L,
+        periodType = BudgetPeriodType.MONTHLY,
+        periodAnchor = 1,
+        createdAtEpochMillis = 1_000L,
+        updatedAtEpochMillis = 1_000L
+    )
+
+    @Test
+    fun insertAndReadBudget_overallHasNullCategory() = runTest {
+        db.budgetDao().insert(sampleBudget("b1", category = null))
+        val loaded = db.budgetDao().getById("b1")
+        assertEquals(null, loaded?.category)
+    }
+
+    @Test
+    fun updateBudget_persistsNewAmount() = runTest {
+        db.budgetDao().insert(sampleBudget("b2", category = "Coffee"))
+        val current = db.budgetDao().getById("b2")!!
+        db.budgetDao().update(current.copy(amountMinorUnits = 200_00L))
+        assertEquals(200_00L, db.budgetDao().getById("b2")?.amountMinorUnits)
+    }
+
+    @Test
+    fun deleteBudget_removesIt() = runTest {
+        db.budgetDao().insert(sampleBudget("b3", category = "Dining"))
+        db.budgetDao().deleteById("b3")
+        assertEquals(null, db.budgetDao().getById("b3"))
+    }
 }

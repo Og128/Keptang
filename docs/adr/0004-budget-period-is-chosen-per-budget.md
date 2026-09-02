@@ -1,0 +1,3 @@
+# Budget Period is chosen per Budget, not globally
+
+With both Monthly and Weekly Budget Periods supported, Budgets could either all share one app-wide cycle or each pick independently. A Budget's Period (type, plus start day or start weekday) is a property of that individual Budget, not a single global setting — the Overall Budget, a monthly Rent Category Budget, and a weekly Coffee Category Budget can each run on their own, independently-configured cycle at the same time. This was chosen over a single global cycle because spending naturally clusters at different frequencies (small frequent categories suit weekly review, fixed costs suit monthly), even though most budgeting apps default to one global cycle and a reader might otherwise assume that's the shape here.
