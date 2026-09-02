@@ -1,10 +1,13 @@
 package com.keptang.ui.settings
 
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -22,7 +25,34 @@ fun SettingsScreen(viewModel: SettingsViewModel = viewModel(factory = SettingsVi
     val settings by viewModel.settings.collectAsStateWithLifecycle()
 
     Column(Modifier.fillMaxWidth().padding(16.dp)) {
-        Text("Settings", style = MaterialTheme.typography.headlineSmall)
+        Text(stringResource(R.string.settings_title), style = MaterialTheme.typography.headlineSmall)
+
+        Text(
+            stringResource(R.string.settings_language_label),
+            style = MaterialTheme.typography.labelLarge,
+            modifier = Modifier.padding(top = 16.dp)
+        )
+        Row(Modifier.fillMaxWidth().padding(top = 8.dp)) {
+            val isEnglish = settings.languageCode == "en"
+            if (isEnglish) {
+                Button(onClick = {}, enabled = false, modifier = Modifier.padding(end = 8.dp)) {
+                    Text(stringResource(R.string.settings_language_english))
+                }
+            } else {
+                OutlinedButton(onClick = { viewModel.setLanguage("en") }, modifier = Modifier.padding(end = 8.dp)) {
+                    Text(stringResource(R.string.settings_language_english))
+                }
+            }
+            if (!isEnglish) {
+                Button(onClick = {}, enabled = false) {
+                    Text(stringResource(R.string.settings_language_french))
+                }
+            } else {
+                OutlinedButton(onClick = { viewModel.setLanguage("fr") }) {
+                    Text(stringResource(R.string.settings_language_french))
+                }
+            }
+        }
 
         OutlinedTextField(
             value = settings.currencyCode,

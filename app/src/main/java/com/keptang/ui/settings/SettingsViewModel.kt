@@ -21,6 +21,7 @@ class SettingsViewModel(private val settingsRepository: SettingsRepository) : Vi
     fun setTimeZone(id: String) = viewModelScope.launch { settingsRepository.setTimeZone(id) }
     fun setDefaultAccount(account: String) = viewModelScope.launch { settingsRepository.setDefaultAccount(account) }
     fun setAudioRetentionDays(days: Int) = viewModelScope.launch { settingsRepository.setAudioRetentionDays(days) }
+    fun setLanguage(code: String) = viewModelScope.launch { settingsRepository.setLanguage(code) }
 
     companion object {
         val Factory = viewModelFactory {

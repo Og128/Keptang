@@ -17,7 +17,13 @@
 
     <string name="notif_result_saved_for_later">Recording saved for later processing</string>
     <string name="notif_result_could_not_understand">Could not understand the recording — tap to review</string>
+    <string name="notif_result_needs_review_combo">%1$s, %2$d needs review</string>
     <string name="notif_mic_permission_needed">Microphone permission needed — open Keptang to grant it</string>
+
+    <plurals name="notif_expenses_added">
+        <item quantity="one">%1$d expense added</item>
+        <item quantity="other">%1$d expenses added</item>
+    </plurals>
 
     <string name="onboarding_title">Welcome to Keptang</string>
     <string name="onboarding_mic_rationale">Keptang records your voice only when you tap the home-screen widget, transcribes it entirely on this device, and never uploads audio or financial data anywhere.</string>
@@ -43,10 +49,38 @@
     <string name="action_save">Save</string>
     <string name="action_cancel">Cancel</string>
 
+    <string name="settings_title">Settings</string>
     <string name="settings_default_currency">Default currency</string>
     <string name="settings_time_zone">Time zone</string>
     <string name="settings_default_account">Default account</string>
     <string name="settings_audio_retention">Audio retention (days)</string>
+    <string name="settings_language_label">Language</string>
+    <!-- Language names are always shown as endonyms (each language names itself), never
+         translated - so these two keys are deliberately identical in every values-*/strings.xml. -->
+    <string name="settings_language_english">English</string>
+    <string name="settings_language_french">Français</string>
+
+    <string name="inbox_no_transcript">(no transcript yet)</string>
+    <string name="status_recording">Recording</string>
+    <string name="status_captured">Captured</string>
+    <string name="status_transcribing">Transcribing</string>
+    <string name="status_parsing">Parsing</string>
+    <string name="status_processed">Processed</string>
+    <string name="status_needs_review">Needs review</string>
+    <string name="status_failed">Failed</string>
+    <string name="status_cancelled">Cancelled</string>
+
+    <string name="capture_detail_status_prefix">Status: %1$s</string>
+    <string name="capture_detail_transcript_title">Transcript</string>
+    <string name="capture_detail_transcript_empty">(none yet)</string>
+    <string name="capture_detail_error_prefix">Error: %1$s</string>
+    <string name="capture_detail_expenses_title">Expenses from this capture</string>
+
+    <string name="review_originally_heard">Originally heard: %1$s</string>
+    <string name="review_amount_label">Amount (%1$s)</string>
+    <string name="review_category_label">Category</string>
+
+    <string name="expenses_merchant_placeholder">-</string>
 
     <string name="manual_add_title">Add expense</string>
     <string name="manual_add_amount">Amount</string>

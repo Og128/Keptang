@@ -60,19 +60,22 @@ private fun ReviewCard(expense: ExpenseEntity, onApprove: (ExpenseEntity) -> Uni
     Card(Modifier.fillMaxWidth().padding(vertical = 6.dp)) {
         Column(Modifier.padding(12.dp)) {
             Text(
-                "Originally heard: ${formatMoney(expense.amountMinorUnits, expense.currencyCode)}",
+                stringResource(
+                    R.string.review_originally_heard,
+                    formatMoney(expense.amountMinorUnits, expense.currencyCode)
+                ),
                 style = MaterialTheme.typography.bodySmall
             )
             OutlinedTextField(
                 value = amountMajorText,
                 onValueChange = { amountMajorText = it },
-                label = { Text("Amount (${expense.currencyCode})") },
+                label = { Text(stringResource(R.string.review_amount_label, expense.currencyCode)) },
                 modifier = Modifier.fillMaxWidth().padding(top = 8.dp)
             )
             OutlinedTextField(
                 value = category,
                 onValueChange = { category = it },
-                label = { Text("Category") },
+                label = { Text(stringResource(R.string.review_category_label)) },
                 modifier = Modifier.fillMaxWidth().padding(top = 8.dp)
             )
             Row(

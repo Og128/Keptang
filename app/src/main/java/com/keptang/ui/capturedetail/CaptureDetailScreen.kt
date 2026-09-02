@@ -15,13 +15,14 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.keptang.R
-import com.keptang.data.db.CaptureStatus
+import com.keptang.ui.common.captureStatusLabel
 import com.keptang.ui.common.formatDateTime
 import com.keptang.ui.common.formatMoney
 
@@ -39,7 +40,10 @@ fun CaptureDetailScreen(
             .fillMaxSize()
             .padding(16.dp)
     ) {
-        Text("Status: ${capture.status}", style = MaterialTheme.typography.titleMedium)
+        Text(
+            stringResource(R.string.capture_detail_status_prefix, captureStatusLabel(capture.status)),
+            style = MaterialTheme.typography.titleMedium
+        )
         Text(
             formatDateTime(capture.capturedAtEpochMillis, capture.timeZoneId),
             style = MaterialTheme.typography.bodySmall
@@ -47,16 +51,16 @@ fun CaptureDetailScreen(
 
         HorizontalDivider(Modifier.padding(vertical = 12.dp))
 
-        Text("Transcript", style = MaterialTheme.typography.titleSmall)
+        Text(stringResource(R.string.capture_detail_transcript_title), style = MaterialTheme.typography.titleSmall)
         Text(
-            capture.rawTranscript?.takeIf { it.isNotBlank() } ?: "(none yet)",
+            capture.rawTranscript?.takeIf { it.isNotBlank() } ?: stringResource(R.string.capture_detail_transcript_empty),
             style = MaterialTheme.typography.bodyMedium,
             modifier = Modifier.padding(bottom = 12.dp)
         )
 
         if (capture.errorMessage != null) {
             Text(
-                "Error: ${capture.errorMessage}",
+                stringResource(R.string.capture_detail_error_prefix, capture.errorMessage),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.error,
                 modifier = Modifier.padding(bottom = 12.dp)
@@ -64,7 +68,7 @@ fun CaptureDetailScreen(
         }
 
         if (state.expenses.isNotEmpty()) {
-            Text("Expenses from this capture", style = MaterialTheme.typography.titleSmall)
+            Text(stringResource(R.string.capture_detail_expenses_title), style = MaterialTheme.typography.titleSmall)
             state.expenses.forEach { expense ->
                 Card(Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
                     Text(

@@ -15,7 +15,13 @@ object DateExpressions {
         "july", "august", "september", "october", "november", "december"
     )
 
+    private val MONTHS_FR = listOf(
+        "janvier", "février", "mars", "avril", "mai", "juin",
+        "juillet", "août", "septembre", "octobre", "novembre", "décembre"
+    )
+
     private val ISO_DATE_REGEX = Regex("""\b(\d{4})-(\d{1,2})-(\d{1,2})\b""")
+
     private val MONTH_DAY_REGEX = Regex(
         """\b(${MONTHS.joinToString("|")})\s+(\d{1,2})(?:st|nd|rd|th)?\b""",
         RegexOption.IGNORE_CASE
@@ -27,16 +33,35 @@ object DateExpressions {
     private val TODAY_REGEX = Regex("""\btoday\b""", RegexOption.IGNORE_CASE)
     private val YESTERDAY_REGEX = Regex("""\byesterday\b""", RegexOption.IGNORE_CASE)
 
-    fun isToday(segment: String): Boolean = TODAY_REGEX.containsMatchIn(segment)
+    // French dates are always day-then-month ("5 août", never "août 5"), and use no ordinal
+    // suffix except "1er" for the first of the month - unlike English's st/nd/rd/th.
+    private val DAY_MONTH_REGEX_FR = Regex(
+        """\b(\d{1,2})(?:er)?\s+(${MONTHS_FR.joinToString("|")})\b""",
+        RegexOption.IGNORE_CASE
+    )
+    private val TODAY_REGEX_FR = Regex("""\baujourd'?hui\b""", RegexOption.IGNORE_CASE)
+    private val YESTERDAY_REGEX_FR = Regex("""\bhier\b""", RegexOption.IGNORE_CASE)
 
-    fun isYesterday(segment: String): Boolean = YESTERDAY_REGEX.containsMatchIn(segment)
+    fun isToday(segment: String, languageCode: String = "en"): Boolean =
+        (if (languageCode == "fr") TODAY_REGEX_FR else TODAY_REGEX).containsMatchIn(segment)
+
+    fun isYesterday(segment: String, languageCode: String = "en"): Boolean =
+        (if (languageCode == "fr") YESTERDAY_REGEX_FR else YESTERDAY_REGEX).containsMatchIn(segment)
 
     /** Returns an absolute date if [segment] contains an explicit (non-relative) date, else null. */
-    fun extractExplicitDate(segment: String, referenceYear: Int): LocalDate? {
+    fun extractExplicitDate(segment: String, referenceYear: Int, languageCode: String = "en"): LocalDate? {
         ISO_DATE_REGEX.find(segment)?.let { m ->
             return runCatching {
                 LocalDate.of(m.groupValues[1].toInt(), m.groupValues[2].toInt(), m.groupValues[3].toInt())
             }.getOrNull()
+        }
+        if (languageCode == "fr") {
+            DAY_MONTH_REGEX_FR.find(segment)?.let { m ->
+                val day = m.groupValues[1].toIntOrNull() ?: return null
+                val month = MONTHS_FR.indexOf(m.groupValues[2].lowercase()) + 1
+                return runCatching { LocalDate.of(referenceYear, month, day) }.getOrNull()
+            }
+            return null
         }
         MONTH_DAY_REGEX.find(segment)?.let { m ->
             val month = MONTHS.indexOf(m.groupValues[1].lowercase()) + 1
@@ -52,10 +77,14 @@ object DateExpressions {
     }
 
     /** Removes explicit date substrings so amount extraction never mistakes a day/year for money. */
-    fun stripDatePhrases(segment: String): String {
+    fun stripDatePhrases(segment: String, languageCode: String = "en"): String {
         var result = ISO_DATE_REGEX.replace(segment, " ")
-        result = MONTH_DAY_REGEX.replace(result, " ")
-        result = DAY_MONTH_REGEX.replace(result, " ")
+        if (languageCode == "fr") {
+            result = DAY_MONTH_REGEX_FR.replace(result, " ")
+        } else {
+            result = MONTH_DAY_REGEX.replace(result, " ")
+            result = DAY_MONTH_REGEX.replace(result, " ")
+        }
         return result
     }
 }

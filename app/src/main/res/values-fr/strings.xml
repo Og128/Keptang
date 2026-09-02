@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- app_name intentionally not overridden: "Keptang" stays as the brand name. -->
+    <string name="widget_label">Capture vocale Keptang</string>
+    <string name="widget_mic_description">Appuyez pour enregistrer une dépense</string>
+
+    <string name="notif_channel_recording_name">Capture vocale</string>
+    <string name="notif_channel_recording_desc">Affiché pendant que Keptang écoute une nouvelle dépense</string>
+    <string name="notif_channel_results_name">Résultats de capture</string>
+    <string name="notif_channel_results_desc">Affiche ce qui s\'est passé après le traitement d\'une capture vocale</string>
+
+    <string name="notif_recording_title">Écoute…</string>
+    <string name="notif_recording_text">Énoncez votre dépense. Appuyez à nouveau sur le widget pour arrêter.</string>
+    <string name="notif_action_stop">Arrêter</string>
+    <string name="notif_action_cancel">Annuler</string>
+    <string name="notif_action_undo">Annuler</string>
+
+    <string name="notif_result_saved_for_later">Enregistrement sauvegardé pour un traitement ultérieur</string>
+    <string name="notif_result_could_not_understand">Impossible de comprendre l\'enregistrement — appuyez pour vérifier</string>
+    <string name="notif_result_needs_review_combo">%1$s, %2$d à vérifier</string>
+    <string name="notif_mic_permission_needed">Autorisation du microphone requise — ouvrez Keptang pour l\'accorder</string>
+
+    <plurals name="notif_expenses_added">
+        <item quantity="one">%1$d dépense ajoutée</item>
+        <item quantity="other">%1$d dépenses ajoutées</item>
+    </plurals>
+
+    <string name="onboarding_title">Bienvenue sur Keptang</string>
+    <string name="onboarding_mic_rationale">Keptang enregistre votre voix uniquement lorsque vous appuyez sur le widget de l\'écran d\'accueil, la transcrit entièrement sur cet appareil, et ne transmet jamais l\'audio ni les données financières nulle part.</string>
+    <string name="onboarding_grant_permission">Autoriser l\'accès au microphone</string>
+    <string name="onboarding_add_widget_title">Ajouter le widget Keptang</string>
+    <string name="onboarding_add_widget_body">Appuyez longuement sur votre écran d\'accueil, choisissez Widgets, trouvez Keptang, puis faites glisser le widget microphone sur votre écran d\'accueil. Appuyez dessus à tout moment pour enregistrer une dépense à la voix.</string>
+    <string name="onboarding_continue">Continuer</string>
+    <string name="onboarding_done">Terminé</string>
+
+    <string name="nav_inbox">Boîte de réception</string>
+    <string name="nav_expenses">Dépenses</string>
+    <string name="nav_review">Vérification</string>
+    <string name="nav_settings">Paramètres</string>
+
+    <string name="inbox_empty">Aucune capture pour l\'instant. Appuyez sur le widget de l\'écran d\'accueil et énoncez une dépense.</string>
+    <string name="expenses_empty">Aucune dépense enregistrée pour l\'instant.</string>
+    <string name="review_empty">Rien à vérifier pour le moment.</string>
+
+    <string name="action_retry">Réessayer</string>
+    <string name="action_delete">Supprimer</string>
+    <string name="action_approve">Approuver</string>
+    <string name="action_edit">Modifier</string>
+    <string name="action_save">Enregistrer</string>
+    <string name="action_cancel">Annuler</string>
+
+    <string name="settings_title">Paramètres</string>
+    <string name="settings_default_currency">Devise par défaut</string>
+    <string name="settings_time_zone">Fuseau horaire</string>
+    <string name="settings_default_account">Compte par défaut</string>
+    <string name="settings_audio_retention">Conservation audio (jours)</string>
+    <string name="settings_language_label">Langue</string>
+    <!-- settings_language_english / settings_language_french intentionally not overridden here -
+         see the comment in values/strings.xml: language names are always shown as endonyms. -->
+
+    <string name="inbox_no_transcript">(pas encore de transcription)</string>
+    <string name="status_recording">Enregistrement</string>
+    <string name="status_captured">Capturé</string>
+    <string name="status_transcribing">Transcription</string>
+    <string name="status_parsing">Analyse</string>
+    <string name="status_processed">Traité</string>
+    <string name="status_needs_review">À vérifier</string>
+    <string name="status_failed">Échoué</string>
+    <string name="status_cancelled">Annulé</string>
+
+    <string name="capture_detail_status_prefix">Statut : %1$s</string>
+    <string name="capture_detail_transcript_title">Transcription</string>
+    <string name="capture_detail_transcript_empty">(aucune pour l\'instant)</string>
+    <string name="capture_detail_error_prefix">Erreur : %1$s</string>
+    <string name="capture_detail_expenses_title">Dépenses de cette capture</string>
+
+    <string name="review_originally_heard">Entendu à l\'origine : %1$s</string>
+    <string name="review_amount_label">Montant (%1$s)</string>
+    <string name="review_category_label">Catégorie</string>
+
+    <string name="expenses_merchant_placeholder">-</string>
+
+    <string name="manual_add_title">Ajouter une dépense</string>
+    <string name="manual_add_amount">Montant</string>
+    <string name="manual_add_currency">Devise</string>
+    <string name="manual_add_category">Catégorie</string>
+    <string name="manual_add_merchant">Commerçant (facultatif)</string>
+    <string name="manual_add_account">Compte (facultatif)</string>
+    <string name="manual_add_payment_method">Moyen de paiement (facultatif)</string>
+    <string name="manual_add_default_category">Non catégorisé</string>
+</resources>

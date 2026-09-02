@@ -16,6 +16,7 @@ data class AppSettings(
     val timeZoneId: String = Defaults.TIME_ZONE_ID,
     val defaultAccount: String = Defaults.DEFAULT_ACCOUNT,
     val audioRetentionDays: Int = Defaults.AUDIO_RETENTION_DAYS,
+    val languageCode: String = Defaults.LANGUAGE_CODE,
     val firstRunCompleted: Boolean = false
 )
 
@@ -26,6 +27,7 @@ class SettingsRepository(private val context: Context) {
         val TIME_ZONE = stringPreferencesKey("time_zone_id")
         val ACCOUNT = stringPreferencesKey("default_account")
         val RETENTION_DAYS = intPreferencesKey("audio_retention_days")
+        val LANGUAGE = stringPreferencesKey("language_code")
         val FIRST_RUN = stringPreferencesKey("first_run_completed")
     }
 
@@ -35,6 +37,7 @@ class SettingsRepository(private val context: Context) {
             timeZoneId = prefs[Keys.TIME_ZONE] ?: Defaults.TIME_ZONE_ID,
             defaultAccount = prefs[Keys.ACCOUNT] ?: Defaults.DEFAULT_ACCOUNT,
             audioRetentionDays = prefs[Keys.RETENTION_DAYS] ?: Defaults.AUDIO_RETENTION_DAYS,
+            languageCode = prefs[Keys.LANGUAGE] ?: Defaults.LANGUAGE_CODE,
             firstRunCompleted = prefs[Keys.FIRST_RUN] == "true"
         )
     }
@@ -46,6 +49,8 @@ class SettingsRepository(private val context: Context) {
     suspend fun setDefaultAccount(account: String) = context.dataStore.edit { it[Keys.ACCOUNT] = account }
 
     suspend fun setAudioRetentionDays(days: Int) = context.dataStore.edit { it[Keys.RETENTION_DAYS] = days }
+
+    suspend fun setLanguage(code: String) = context.dataStore.edit { it[Keys.LANGUAGE] = code }
 
     suspend fun setFirstRunCompleted() = context.dataStore.edit { it[Keys.FIRST_RUN] = "true" }
 }

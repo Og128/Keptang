@@ -57,7 +57,7 @@ fun ExpensesScreen(
                             style = MaterialTheme.typography.titleMedium
                         )
                         Text(
-                            "${expense.category} · ${expense.merchant ?: "-"}",
+                            "${expense.category} · ${expense.merchant ?: stringResource(R.string.expenses_merchant_placeholder)}",
                             style = MaterialTheme.typography.bodyMedium
                         )
                         Text(

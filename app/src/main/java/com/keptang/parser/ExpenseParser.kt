@@ -21,11 +21,18 @@ class ExpenseParser {
 
     private val commaAndRegex = Regex(""",\s*and\s+""", RegexOption.IGNORE_CASE)
     private val andRegex = Regex("""\s+and\s+""", RegexOption.IGNORE_CASE)
+    private val commaAndRegexFr = Regex(""",\s*et\s+""", RegexOption.IGNORE_CASE)
+    private val andRegexFr = Regex("""\s+et\s+""", RegexOption.IGNORE_CASE)
     private val commaRegex = Regex(""",\s*""")
     private val trimChars = charArrayOf('.', ',', ';', ' ', '\t', '\n')
 
-    fun parse(transcript: String, captureId: String, referenceDateTime: ZonedDateTime): List<ParsedExpense> {
-        val segments = splitIntoClauses(transcript)
+    fun parse(
+        transcript: String,
+        captureId: String,
+        referenceDateTime: ZonedDateTime,
+        languageCode: String = "en"
+    ): List<ParsedExpense> {
+        val segments = splitIntoClauses(transcript, languageCode)
         val today: LocalDate = referenceDateTime.toLocalDate()
         val yesterday: LocalDate = today.minusDays(1)
 
@@ -36,20 +43,20 @@ class ExpenseParser {
             val segment = rawSegment.trim(*trimChars)
             if (segment.isBlank()) continue
 
-            val explicitDate = DateExpressions.extractExplicitDate(segment, referenceDateTime.year)
+            val explicitDate = DateExpressions.extractExplicitDate(segment, referenceDateTime.year, languageCode)
             currentDate = when {
                 explicitDate != null -> explicitDate
-                DateExpressions.isYesterday(segment) -> yesterday
-                DateExpressions.isToday(segment) -> today
+                DateExpressions.isYesterday(segment, languageCode) -> yesterday
+                DateExpressions.isToday(segment, languageCode) -> today
                 else -> currentDate
             }
 
-            val amount = AmountExtractor.extract(segment) ?: continue
+            val amount = AmountExtractor.extract(segment, languageCode) ?: continue
 
-            val category = CategoryRules.classify(segment)
-            val account = AccountExtractor.extract(segment)
-            val paymentMethod = PaymentMethodExtractor.extract(segment)
-            val merchant = MerchantExtractor.extract(segment)
+            val category = CategoryRules.classify(segment, languageCode)
+            val account = AccountExtractor.extract(segment, languageCode)
+            val paymentMethod = PaymentMethodExtractor.extract(segment, languageCode)
+            val merchant = MerchantExtractor.extract(segment, languageCode)
             val confidence = ConfidenceScorer.score(hasCategory = category != null)
 
             val occurredAt = currentDate
@@ -73,10 +80,15 @@ class ExpenseParser {
         return expenses
     }
 
-    private fun splitIntoClauses(transcript: String): List<String> {
+    private fun splitIntoClauses(transcript: String, languageCode: String): List<String> {
         var text = transcript
-        text = commaAndRegex.replace(text, " ~SPLIT~ ")
-        text = andRegex.replace(text, " ~SPLIT~ ")
+        if (languageCode == "fr") {
+            text = commaAndRegexFr.replace(text, " ~SPLIT~ ")
+            text = andRegexFr.replace(text, " ~SPLIT~ ")
+        } else {
+            text = commaAndRegex.replace(text, " ~SPLIT~ ")
+            text = andRegex.replace(text, " ~SPLIT~ ")
+        }
         text = commaRegex.replace(text, " ~SPLIT~ ")
         return text.split("~SPLIT~")
             .map { it.trim(*trimChars) }

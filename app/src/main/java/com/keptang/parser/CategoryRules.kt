@@ -12,11 +12,22 @@ object CategoryRules {
         listOf("electricity", "water", "internet", "phone") to "Utilities"
     )
 
-    val ALL_KEYWORDS: List<String> = RULES.flatMap { it.first }
+    private val RULES_FR: List<Pair<List<String>, String>> = listOf(
+        listOf("taxi", "grab", "bolt") to "Transport",
+        listOf("dîner", "diner", "déjeuner", "dejeuner", "restaurant") to "Dining",
+        listOf("café", "cafe") to "Coffee",
+        listOf("courses", "supermarché", "supermarche") to "Groceries",
+        listOf("loyer") to "Housing",
+        listOf("électricité", "electricite", "eau", "internet", "téléphone", "telephone") to "Utilities"
+    )
 
-    fun classify(segment: String): String? {
+    val ALL_KEYWORDS: List<String> = RULES.flatMap { it.first }
+    val ALL_KEYWORDS_FR: List<String> = RULES_FR.flatMap { it.first }
+
+    fun classify(segment: String, languageCode: String = "en"): String? {
+        val rules = if (languageCode == "fr") RULES_FR else RULES
         val lower = segment.lowercase()
-        for ((keywords, category) in RULES) {
+        for ((keywords, category) in rules) {
             if (keywords.any { keyword -> Regex("\\b${Regex.escape(keyword)}\\b").containsMatchIn(lower) }) {
                 return category
             }

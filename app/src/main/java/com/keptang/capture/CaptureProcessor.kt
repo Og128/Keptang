@@ -31,7 +31,8 @@ class CaptureProcessor(
     private val expenseRepository: ExpenseRepository,
     private val transcriptionProvider: TranscriptionProvider,
     private val expenseParser: ExpenseParser,
-    private val zoneId: ZoneId = ZoneId.of(Defaults.TIME_ZONE_ID)
+    private val zoneId: ZoneId = ZoneId.of(Defaults.TIME_ZONE_ID),
+    private val languageCodeProvider: () -> String = { Defaults.LANGUAGE_CODE }
 ) {
 
     /** Used by the service right after recording, when a live [TranscriptionResult] is already in hand. */
@@ -79,7 +80,7 @@ class CaptureProcessor(
     private suspend fun finalizeSuccess(captureId: String, transcript: String): ProcessOutcome {
         captureRepository.markParsing(captureId, transcript)
         val now = ZonedDateTime.now(zoneId)
-        val parsed = expenseParser.parse(transcript, captureId, now)
+        val parsed = expenseParser.parse(transcript, captureId, now, languageCodeProvider())
         expenseRepository.saveParsedExpenses(captureId, parsed)
 
         return when {

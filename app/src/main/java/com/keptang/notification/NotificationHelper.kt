@@ -6,10 +6,13 @@ import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
+import android.content.res.Configuration
 import androidx.core.app.NotificationCompat
 import com.keptang.R
 import com.keptang.capture.ProcessOutcome
+import com.keptang.di.ServiceLocator
 import com.keptang.ui.MainActivity
+import java.util.Locale
 
 object NotificationIds {
     const val RECORDING = 1001
@@ -27,36 +30,50 @@ class NotificationHelper(private val context: Context) {
 
     private val manager = requireNotNull(context.getSystemService(NotificationManager::class.java))
 
+    /**
+     * A [Context] wrapped with the currently-selected app language, so notification text (built
+     * outside the Compose tree, unlike everything else) still follows the in-app language toggle
+     * rather than the device's system locale.
+     */
+    private fun localizedContext(): Context {
+        val languageCode = ServiceLocator.currentSettings.value.languageCode
+        val config = Configuration(context.resources.configuration)
+        config.setLocale(Locale.forLanguageTag(languageCode))
+        return context.createConfigurationContext(config)
+    }
+
     fun ensureChannels() {
+        val strings = localizedContext()
         val recording = NotificationChannel(
             CHANNEL_RECORDING,
-            context.getString(R.string.notif_channel_recording_name),
+            strings.getString(R.string.notif_channel_recording_name),
             NotificationManager.IMPORTANCE_LOW
-        ).apply { description = context.getString(R.string.notif_channel_recording_desc) }
+        ).apply { description = strings.getString(R.string.notif_channel_recording_desc) }
 
         val results = NotificationChannel(
             CHANNEL_RESULTS,
-            context.getString(R.string.notif_channel_results_name),
+            strings.getString(R.string.notif_channel_results_name),
             NotificationManager.IMPORTANCE_DEFAULT
-        ).apply { description = context.getString(R.string.notif_channel_results_desc) }
+        ).apply { description = strings.getString(R.string.notif_channel_results_desc) }
 
         manager.createNotificationChannel(recording)
         manager.createNotificationChannel(results)
     }
 
     fun buildRecordingNotification(captureId: String): Notification {
+        val strings = localizedContext()
         val stopIntent = actionBroadcast(NotificationActions.STOP_RECORDING, captureId, requestCode = 10)
         val cancelIntent = actionBroadcast(NotificationActions.CANCEL_RECORDING, captureId, requestCode = 11)
 
         return NotificationCompat.Builder(context, CHANNEL_RECORDING)
             .setSmallIcon(R.drawable.ic_notification_mic)
-            .setContentTitle(context.getString(R.string.notif_recording_title))
-            .setContentText(context.getString(R.string.notif_recording_text))
+            .setContentTitle(strings.getString(R.string.notif_recording_title))
+            .setContentText(strings.getString(R.string.notif_recording_text))
             .setOngoing(true)
             .setOnlyAlertOnce(true)
             .setPriority(NotificationCompat.PRIORITY_LOW)
-            .addAction(0, context.getString(R.string.notif_action_stop), stopIntent)
-            .addAction(0, context.getString(R.string.notif_action_cancel), cancelIntent)
+            .addAction(0, strings.getString(R.string.notif_action_stop), stopIntent)
+            .addAction(0, strings.getString(R.string.notif_action_cancel), cancelIntent)
             .build()
     }
 
@@ -64,11 +81,12 @@ class NotificationHelper(private val context: Context) {
      * Shown (briefly, via startForeground) when the widget is tapped before the user has ever
      * granted microphone access through the app's own onboarding flow.
      */
-    fun buildPermissionRequiredNotification(): Notification =
-        NotificationCompat.Builder(context, CHANNEL_RESULTS)
+    fun buildPermissionRequiredNotification(): Notification {
+        val strings = localizedContext()
+        return NotificationCompat.Builder(context, CHANNEL_RESULTS)
             .setSmallIcon(R.drawable.ic_notification_mic)
-            .setContentTitle(context.getString(R.string.app_name))
-            .setContentText(context.getString(R.string.notif_mic_permission_needed))
+            .setContentTitle(strings.getString(R.string.app_name))
+            .setContentText(strings.getString(R.string.notif_mic_permission_needed))
             .setAutoCancel(true)
             .setContentIntent(
                 PendingIntent.getActivity(
@@ -81,17 +99,23 @@ class NotificationHelper(private val context: Context) {
                 )
             )
             .build()
+    }
 
     fun notifyResult(captureId: String, outcome: ProcessOutcome) {
+        val strings = localizedContext()
         val text = when (outcome) {
-            is ProcessOutcome.Processed -> pluralExpensesAdded(outcome.approvedCount)
+            is ProcessOutcome.Processed -> pluralExpensesAdded(strings, outcome.approvedCount)
             is ProcessOutcome.NeedsReview -> when {
                 outcome.approvedCount > 0 ->
-                    "${pluralExpensesAdded(outcome.approvedCount)}, ${outcome.reviewCount} needs review"
-                else -> context.getString(R.string.notif_result_could_not_understand)
+                    strings.getString(
+                        R.string.notif_result_needs_review_combo,
+                        pluralExpensesAdded(strings, outcome.approvedCount),
+                        outcome.reviewCount
+                    )
+                else -> strings.getString(R.string.notif_result_could_not_understand)
             }
-            ProcessOutcome.SavedForLater -> context.getString(R.string.notif_result_saved_for_later)
-            ProcessOutcome.CouldNotUnderstand -> context.getString(R.string.notif_result_could_not_understand)
+            ProcessOutcome.SavedForLater -> strings.getString(R.string.notif_result_saved_for_later)
+            ProcessOutcome.CouldNotUnderstand -> strings.getString(R.string.notif_result_could_not_understand)
             ProcessOutcome.AlreadyProcessed, ProcessOutcome.NotFound -> return
         }
 
@@ -107,7 +131,7 @@ class NotificationHelper(private val context: Context) {
 
         val builder = NotificationCompat.Builder(context, CHANNEL_RESULTS)
             .setSmallIcon(R.drawable.ic_notification_mic)
-            .setContentTitle(context.getString(R.string.app_name))
+            .setContentTitle(strings.getString(R.string.app_name))
             .setContentText(text)
             .setAutoCancel(true)
             .setContentIntent(contentIntent)
@@ -119,7 +143,7 @@ class NotificationHelper(private val context: Context) {
         }
         if (addedExpenses > 0) {
             val undoIntent = actionBroadcast(NotificationActions.UNDO_EXPENSES, captureId, requestCode = 12)
-            builder.addAction(0, context.getString(R.string.notif_action_undo), undoIntent)
+            builder.addAction(0, strings.getString(R.string.notif_action_undo), undoIntent)
         }
 
         manager.notify(NotificationIds.RESULT_BASE + captureId.hashCode(), builder.build())
@@ -133,8 +157,8 @@ class NotificationHelper(private val context: Context) {
         manager.cancel(NotificationIds.RESULT_BASE + captureId.hashCode())
     }
 
-    private fun pluralExpensesAdded(count: Int): String =
-        if (count == 1) "1 expense added" else "$count expenses added"
+    private fun pluralExpensesAdded(strings: Context, count: Int): String =
+        strings.resources.getQuantityString(R.plurals.notif_expenses_added, count, count)
 
     private fun actionBroadcast(action: String, captureId: String, requestCode: Int): PendingIntent {
         val intent = Intent(context, NotificationActionReceiver::class.java).apply {

@@ -17,6 +17,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
@@ -25,7 +26,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.keptang.R
 import com.keptang.data.db.CaptureEntity
-import com.keptang.data.db.CaptureStatus
+import com.keptang.ui.common.captureStatusLabel
 import com.keptang.ui.common.formatDateTime
 
 @Composable
@@ -67,13 +68,13 @@ private fun CaptureRow(capture: CaptureEntity, onClick: () -> Unit, onDelete: ()
             verticalAlignment = Alignment.CenterVertically
         ) {
             Column {
-                Text(statusLabel(capture.status), style = MaterialTheme.typography.labelLarge)
+                Text(captureStatusLabel(capture.status), style = MaterialTheme.typography.labelLarge)
                 Text(
                     formatDateTime(capture.capturedAtEpochMillis, capture.timeZoneId),
                     style = MaterialTheme.typography.bodySmall
                 )
                 Text(
-                    capture.rawTranscript?.takeIf { it.isNotBlank() } ?: "(no transcript yet)",
+                    capture.rawTranscript?.takeIf { it.isNotBlank() } ?: stringResource(R.string.inbox_no_transcript),
                     style = MaterialTheme.typography.bodyMedium,
                     maxLines = 2
                 )
@@ -83,15 +84,4 @@ private fun CaptureRow(capture: CaptureEntity, onClick: () -> Unit, onDelete: ()
             }
         }
     }
-}
-
-private fun statusLabel(status: CaptureStatus): String = when (status) {
-    CaptureStatus.RECORDING -> "Recording"
-    CaptureStatus.CAPTURED -> "Captured"
-    CaptureStatus.TRANSCRIBING -> "Transcribing"
-    CaptureStatus.PARSING -> "Parsing"
-    CaptureStatus.PROCESSED -> "Processed"
-    CaptureStatus.NEEDS_REVIEW -> "Needs review"
-    CaptureStatus.FAILED -> "Failed"
-    CaptureStatus.CANCELLED -> "Cancelled"
 }

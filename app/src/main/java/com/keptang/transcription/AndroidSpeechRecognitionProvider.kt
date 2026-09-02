@@ -11,7 +11,9 @@ import android.speech.RecognitionSupport
 import android.speech.RecognitionSupportCallback
 import android.speech.RecognizerIntent
 import android.speech.SpeechRecognizer
+import com.keptang.data.repository.SettingsRepository
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
 import java.util.concurrent.Executor
@@ -22,7 +24,10 @@ import kotlin.coroutines.resume
  * from a thread with a [Looper] (we use the main thread), and it only supports listening to the
  * live microphone - see [TranscriptionProvider] for why this shapes the interface the way it does.
  */
-class AndroidSpeechRecognitionProvider(private val context: Context) : TranscriptionProvider {
+class AndroidSpeechRecognitionProvider(
+    private val context: Context,
+    private val settingsRepository: SettingsRepository
+) : TranscriptionProvider {
 
     private val mainHandler = Handler(Looper.getMainLooper())
     private val mainExecutor = Executor { command -> mainHandler.post(command) }
@@ -42,9 +47,10 @@ class AndroidSpeechRecognitionProvider(private val context: Context) : Transcrip
 
     override suspend fun listen(onEndOfSpeech: () -> Unit): TranscriptionResult = withContext<TranscriptionResult>(Dispatchers.Main) {
         val endOfSpeechCallback = onEndOfSpeech
+        val recognitionLanguage = recognitionLanguageTag(settingsRepository.settings.first().languageCode)
         val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
             putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
-            putExtra(RecognizerIntent.EXTRA_LANGUAGE, RECOGNITION_LANGUAGE)
+            putExtra(RecognizerIntent.EXTRA_LANGUAGE, recognitionLanguage)
             putExtra(RecognizerIntent.EXTRA_PREFER_OFFLINE, true)
             putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, false)
             putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 1)
@@ -55,11 +61,12 @@ class AndroidSpeechRecognitionProvider(private val context: Context) : Transcrip
         // Assistant's own dictation models, not this API's). If ours isn't installed,
         // startListening() would otherwise fail immediately with ERROR_LANGUAGE_UNAVAILABLE;
         // trigger the download instead so a subsequent retry has a chance to succeed.
-        val modelMissing = Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU && !isModelInstalled(intent)
+        val modelMissing = Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+            !isModelInstalled(intent, recognitionLanguage)
 
         if (modelMissing) {
             TranscriptionResult.Failed(
-                "On-device $RECOGNITION_LANGUAGE speech model isn't installed yet; download was just triggered - retry in a minute"
+                "On-device $recognitionLanguage speech model isn't installed yet; download was just triggered - retry in a minute"
             )
         } else suspendCancellableCoroutine<TranscriptionResult> { continuation ->
             val recognizer = newRecognizer()
@@ -126,14 +133,15 @@ class AndroidSpeechRecognitionProvider(private val context: Context) : Transcrip
         }
 
     @Suppress("NewApi") // only called under an SDK_INT >= TIRAMISU guard, see listen() above
-    private suspend fun isModelInstalled(intent: Intent): Boolean = suspendCancellableCoroutine { continuation ->
+    private suspend fun isModelInstalled(intent: Intent, recognitionLanguage: String): Boolean =
+        suspendCancellableCoroutine { continuation ->
         val recognizer = newRecognizer()
         recognizer.checkRecognitionSupport(
             intent,
             mainExecutor,
             object : RecognitionSupportCallback {
                 override fun onSupportResult(recognitionSupport: RecognitionSupport) {
-                    val installed = recognitionSupport.installedOnDeviceLanguages.contains(RECOGNITION_LANGUAGE)
+                    val installed = recognitionSupport.installedOnDeviceLanguages.contains(recognitionLanguage)
                     if (installed) {
                         recognizer.destroy()
                     } else {
@@ -168,7 +176,8 @@ class AndroidSpeechRecognitionProvider(private val context: Context) : Transcrip
         else -> "Unknown recognition error ($code)"
     }
 
-    private companion object {
-        const val RECOGNITION_LANGUAGE = "en-US"
+    private fun recognitionLanguageTag(languageCode: String): String = when (languageCode) {
+        "fr" -> "fr-FR"
+        else -> "en-US"
     }
 }
