@@ -36,11 +36,13 @@
     <string name="nav_inbox">Inbox</string>
     <string name="nav_expenses">Expenses</string>
     <string name="nav_review">Review</string>
+    <string name="nav_budgets">Budgets</string>
     <string name="nav_settings">Settings</string>
 
     <string name="inbox_empty">No captures yet. Tap the home-screen widget and speak an expense.</string>
     <string name="expenses_empty">No expenses recorded yet.</string>
     <string name="review_empty">Nothing needs review right now.</string>
+    <string name="budgets_empty">No budgets yet. Tap + to set one.</string>
 
     <string name="action_retry">Retry</string>
     <string name="action_delete">Delete</string>
@@ -48,12 +50,15 @@
     <string name="action_edit">Edit</string>
     <string name="action_save">Save</string>
     <string name="action_cancel">Cancel</string>
+    <string name="action_add">Add</string>
 
     <string name="settings_title">Settings</string>
     <string name="settings_default_currency">Default currency</string>
     <string name="settings_time_zone">Time zone</string>
     <string name="settings_default_account">Default account</string>
     <string name="settings_audio_retention">Audio retention (days)</string>
+    <string name="settings_categories_label">Categories</string>
+    <string name="settings_categories_add_placeholder">New category</string>
     <string name="settings_language_label">Language</string>
     <!-- Language names are always shown as endonyms (each language names itself), never
          translated - so these two keys are deliberately identical in every values-*/strings.xml. -->
@@ -90,4 +95,34 @@
     <string name="manual_add_account">Account (optional)</string>
     <string name="manual_add_payment_method">Payment method (optional)</string>
     <string name="manual_add_default_category">Uncategorized</string>
+
+    <string name="budgets_overall_label">Overall</string>
+    <string name="budgets_other_label">Other</string>
+    <string name="budget_add_title">Add budget</string>
+    <string name="budget_edit_title">Edit budget</string>
+    <string name="budget_form_target_label">Budget for</string>
+    <string name="budget_form_target_overall">Overall</string>
+    <string name="budget_form_amount_label">Amount (%1$s)</string>
+    <string name="budget_form_period_type_label">Period</string>
+    <string name="budget_form_period_monthly">Monthly</string>
+    <string name="budget_form_period_weekly">Weekly</string>
+    <string name="budget_form_anchor_day_label">Start day of month (1-31)</string>
+    <string name="budget_form_anchor_weekday_label">Start day of week</string>
+    <string name="weekday_mon">Mon</string>
+    <string name="weekday_tue">Tue</string>
+    <string name="weekday_wed">Wed</string>
+    <string name="weekday_thu">Thu</string>
+    <string name="weekday_fri">Fri</string>
+    <string name="weekday_sat">Sat</string>
+    <string name="weekday_sun">Sun</string>
+
+    <string name="expenses_view_list">List</string>
+    <string name="expenses_view_calendar">Calendar</string>
+    <string name="calendar_today_action">Today</string>
+    <string name="calendar_day_empty">No expenses on this day.</string>
+
+    <plurals name="budget_currency_excluded_notice">
+        <item quantity="one">%1$d expense in %2$s not counted</item>
+        <item quantity="other">%1$d expenses in %2$s not counted</item>
+    </plurals>
 </resources>
