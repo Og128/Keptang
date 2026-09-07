@@ -29,4 +29,8 @@ interface BudgetDao {
 
     @Query("DELETE FROM budgets WHERE id = :id")
     suspend fun deleteById(id: String)
+
+    /** Cascades a category rename (see [com.keptang.data.repository.CategoryRepository]). */
+    @Query("UPDATE budgets SET category = :newName WHERE category = :oldName")
+    suspend fun renameCategory(oldName: String, newName: String)
 }

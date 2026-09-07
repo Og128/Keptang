@@ -36,6 +36,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.keptang.R
+import com.keptang.data.db.CategoryEntity
 import com.keptang.data.db.ExpenseEntity
 import com.keptang.ui.common.formatMoney
 import java.time.Instant
@@ -53,10 +54,14 @@ private val WEEKDAY_HEADER_LABELS = listOf(
 private val monthYearFormatter = DateTimeFormatter.ofPattern("MMMM yyyy", Locale.US)
 
 @Composable
-fun ExpenseCalendarView(expenses: List<ExpenseEntity>) {
+fun ExpenseCalendarView(
+    expenses: List<ExpenseEntity>,
+    categoriesByName: Map<String, CategoryEntity> = emptyMap(),
+    selectedDate: LocalDate?,
+    onDateSelected: (LocalDate) -> Unit
+) {
     val today = remember { LocalDate.now() }
     var displayedMonth by remember { mutableStateOf(YearMonth.from(today)) }
-    var selectedDate by remember { mutableStateOf<LocalDate?>(null) }
 
     val byDay = remember(expenses) { expensesByDay(expenses) }
     val cells = remember(displayedMonth) { monthGridDays(displayedMonth) }
@@ -74,7 +79,7 @@ fun ExpenseCalendarView(expenses: List<ExpenseEntity>) {
                 Text(displayedMonth.format(monthYearFormatter), style = MaterialTheme.typography.titleMedium)
                 TextButton(onClick = {
                     displayedMonth = YearMonth.from(today)
-                    selectedDate = today
+                    onDateSelected(today)
                 }) {
                     Text(stringResource(R.string.calendar_today_action))
                 }
@@ -103,7 +108,7 @@ fun ExpenseCalendarView(expenses: List<ExpenseEntity>) {
                     isToday = date == today,
                     isSelected = date == selectedDate,
                     dayExpenses = byDay[date].orEmpty(),
-                    onClick = { selectedDate = date }
+                    onClick = { onDateSelected(date) }
                 )
             }
         }
@@ -116,7 +121,7 @@ fun ExpenseCalendarView(expenses: List<ExpenseEntity>) {
                 Text(stringResource(R.string.calendar_day_empty), style = MaterialTheme.typography.bodyMedium)
             } else {
                 Column {
-                    dayExpenses.forEach { expense -> ExpenseCard(expense) }
+                    dayExpenses.forEach { expense -> ExpenseCard(expense, categoriesByName[expense.category]) }
                 }
             }
         }

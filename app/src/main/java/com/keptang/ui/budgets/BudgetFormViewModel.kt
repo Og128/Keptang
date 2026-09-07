@@ -8,7 +8,7 @@ import com.keptang.data.db.BudgetEntity
 import com.keptang.data.db.BudgetPeriodType
 import com.keptang.data.repository.AppSettings
 import com.keptang.data.repository.BudgetRepository
-import com.keptang.data.repository.ExpenseRepository
+import com.keptang.data.repository.CategoryRepository
 import com.keptang.data.repository.SettingsRepository
 import com.keptang.di.ServiceLocator
 import kotlinx.coroutines.flow.SharingStarted
@@ -24,8 +24,8 @@ data class AvailableTargets(val overallAvailable: Boolean, val availableCategori
 class BudgetFormViewModel(
     private val budgetId: String?,
     private val budgetRepository: BudgetRepository,
-    expenseRepository: ExpenseRepository,
-    settingsRepository: SettingsRepository
+    settingsRepository: SettingsRepository,
+    categoryRepository: CategoryRepository
 ) : ViewModel() {
 
     val settings: StateFlow<AppSettings> = settingsRepository.settings
@@ -37,14 +37,12 @@ class BudgetFormViewModel(
 
     val availableTargets: StateFlow<AvailableTargets> = combine(
         budgetRepository.observeAll(),
-        expenseRepository.observeDistinctCategories(),
-        settingsRepository.settings
-    ) { budgets, usedCategories, settings ->
+        categoryRepository.observeAll()
+    ) { budgets, categories ->
         val budgetedCategories = budgets.mapNotNull { it.category }.toSet()
-        val allCategories = (settings.categories + usedCategories).distinct().sorted()
         AvailableTargets(
             overallAvailable = budgets.none { it.category == null },
-            availableCategories = allCategories.filter { it !in budgetedCategories }
+            availableCategories = categories.map { it.name }.filter { it !in budgetedCategories }
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), AvailableTargets(false, emptyList()))
 
@@ -80,8 +78,8 @@ class BudgetFormViewModel(
                 BudgetFormViewModel(
                     budgetId,
                     ServiceLocator.budgetRepository,
-                    ServiceLocator.expenseRepository,
-                    ServiceLocator.settingsRepository
+                    ServiceLocator.settingsRepository,
+                    ServiceLocator.categoryRepository
                 )
             }
         }

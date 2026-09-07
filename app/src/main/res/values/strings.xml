@@ -51,14 +51,15 @@
     <string name="action_save">Save</string>
     <string name="action_cancel">Cancel</string>
     <string name="action_add">Add</string>
+    <string name="action_back">Back</string>
 
     <string name="settings_title">Settings</string>
     <string name="settings_default_currency">Default currency</string>
     <string name="settings_time_zone">Time zone</string>
     <string name="settings_default_account">Default account</string>
     <string name="settings_audio_retention">Audio retention (days)</string>
-    <string name="settings_categories_label">Categories</string>
-    <string name="settings_categories_add_placeholder">New category</string>
+    <string name="settings_inbox_button">Inbox</string>
+    <string name="settings_edit_categories_button">Edit categories</string>
     <string name="settings_language_label">Language</string>
     <!-- Language names are always shown as endonyms (each language names itself), never
          translated - so these two keys are deliberately identical in every values-*/strings.xml. -->
@@ -91,6 +92,7 @@
     <string name="manual_add_amount">Amount</string>
     <string name="manual_add_currency">Currency</string>
     <string name="manual_add_category">Category</string>
+    <string name="manual_add_date">Date (yyyy-mm-dd)</string>
     <string name="manual_add_merchant">Merchant (optional)</string>
     <string name="manual_add_account">Account (optional)</string>
     <string name="manual_add_payment_method">Payment method (optional)</string>
@@ -116,6 +118,7 @@
     <string name="weekday_sat">Sat</string>
     <string name="weekday_sun">Sun</string>
 
+    <string name="ledger_date_yesterday">Yesterday</string>
     <string name="expenses_view_list">List</string>
     <string name="expenses_view_calendar">Calendar</string>
     <string name="calendar_today_action">Today</string>
@@ -125,4 +128,20 @@
         <item quantity="one">%1$d expense in %2$s not counted</item>
         <item quantity="other">%1$d expenses in %2$s not counted</item>
     </plurals>
+
+    <string name="categories_add_title">Add category</string>
+    <string name="categories_edit_title">Edit category</string>
+    <string name="categories_name_label">Name</string>
+    <string name="categories_color_label">Color</string>
+    <string name="categories_icon_label">Icon</string>
+
+    <string name="nav_dashboard">Dashboard</string>
+    <string name="dashboard_filter_today">Today</string>
+    <string name="dashboard_filter_7d">7 Days</string>
+    <string name="dashboard_filter_30d">30 Days</string>
+    <string name="dashboard_filter_period">Period</string>
+    <string name="dashboard_period_start_label">Start date (yyyy-MM-dd)</string>
+    <string name="dashboard_period_end_label">End date (yyyy-MM-dd)</string>
+    <string name="dashboard_total_label">Total spend</string>
+    <string name="dashboard_empty">No expenses in this period.</string>
 </resources>

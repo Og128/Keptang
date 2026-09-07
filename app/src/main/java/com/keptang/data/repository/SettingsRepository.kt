@@ -17,8 +17,7 @@ data class AppSettings(
     val defaultAccount: String = Defaults.DEFAULT_ACCOUNT,
     val audioRetentionDays: Int = Defaults.AUDIO_RETENTION_DAYS,
     val languageCode: String = Defaults.LANGUAGE_CODE,
-    val firstRunCompleted: Boolean = false,
-    val categories: List<String> = Defaults.PREFERRED_CATEGORIES
+    val firstRunCompleted: Boolean = false
 )
 
 class SettingsRepository(private val context: Context) {
@@ -30,7 +29,6 @@ class SettingsRepository(private val context: Context) {
         val RETENTION_DAYS = intPreferencesKey("audio_retention_days")
         val LANGUAGE = stringPreferencesKey("language_code")
         val FIRST_RUN = stringPreferencesKey("first_run_completed")
-        val PREFERRED_CATEGORIES = stringPreferencesKey("preferred_categories")
     }
 
     val settings: Flow<AppSettings> = context.dataStore.data.map { prefs ->
@@ -40,11 +38,7 @@ class SettingsRepository(private val context: Context) {
             defaultAccount = prefs[Keys.ACCOUNT] ?: Defaults.DEFAULT_ACCOUNT,
             audioRetentionDays = prefs[Keys.RETENTION_DAYS] ?: Defaults.AUDIO_RETENTION_DAYS,
             languageCode = prefs[Keys.LANGUAGE] ?: Defaults.LANGUAGE_CODE,
-            firstRunCompleted = prefs[Keys.FIRST_RUN] == "true",
-            categories = prefs[Keys.PREFERRED_CATEGORIES]
-                ?.split("\n")
-                ?.filter { it.isNotBlank() }
-                ?: Defaults.PREFERRED_CATEGORIES
+            firstRunCompleted = prefs[Keys.FIRST_RUN] == "true"
         )
     }
 
@@ -59,7 +53,4 @@ class SettingsRepository(private val context: Context) {
     suspend fun setLanguage(code: String) = context.dataStore.edit { it[Keys.LANGUAGE] = code }
 
     suspend fun setFirstRunCompleted() = context.dataStore.edit { it[Keys.FIRST_RUN] = "true" }
-
-    suspend fun setPreferredCategories(categories: List<String>) =
-        context.dataStore.edit { it[Keys.PREFERRED_CATEGORIES] = categories.joinToString("\n") }
 }

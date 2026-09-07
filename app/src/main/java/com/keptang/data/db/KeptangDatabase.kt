@@ -9,8 +9,8 @@ import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
 
 @Database(
-    entities = [CaptureEntity::class, ExpenseEntity::class, BudgetEntity::class],
-    version = 2,
+    entities = [CaptureEntity::class, ExpenseEntity::class, BudgetEntity::class, CategoryEntity::class],
+    version = 3,
     exportSchema = true
 )
 @TypeConverters(Converters::class)
@@ -19,6 +19,7 @@ abstract class KeptangDatabase : RoomDatabase() {
     abstract fun captureDao(): CaptureDao
     abstract fun expenseDao(): ExpenseDao
     abstract fun budgetDao(): BudgetDao
+    abstract fun categoryDao(): CategoryDao
 
     companion object {
         val MIGRATION_1_2 = object : Migration(1, 2) {
@@ -40,6 +41,59 @@ abstract class KeptangDatabase : RoomDatabase() {
             }
         }
 
+        /**
+         * Replaces the free-text category list previously stored in DataStore
+         * ([com.keptang.data.repository.SettingsRepository]) with a proper table carrying a
+         * color + icon per category, seeded with the same six defaults so existing
+         * expenses/budgets referencing them by name keep working unchanged.
+         */
+        val MIGRATION_2_3 = object : Migration(2, 3) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS `categories` (
+                        `name` TEXT NOT NULL,
+                        `color_hex` TEXT NOT NULL,
+                        `icon_key` TEXT NOT NULL,
+                        `sort_order` INTEGER NOT NULL,
+                        PRIMARY KEY(`name`)
+                    )
+                    """.trimIndent()
+                )
+                seedDefaultCategories(db)
+            }
+        }
+
+        /**
+         * Seeds the same six default categories as [MIGRATION_2_3], for a brand-new install:
+         * migrations only run when upgrading an *existing* database file, so a fresh install
+         * (Room creates the schema straight at the current version) would otherwise end up
+         * with an empty categories table.
+         */
+        private val SEED_CATEGORIES_CALLBACK = object : RoomDatabase.Callback() {
+            override fun onCreate(db: SupportSQLiteDatabase) {
+                super.onCreate(db)
+                seedDefaultCategories(db)
+            }
+        }
+
+        private fun seedDefaultCategories(db: SupportSQLiteDatabase) {
+            val defaults = listOf(
+                Quadruple("Transport", "#2a78d6", "car", 0),
+                Quadruple("Dining", "#eb6834", "restaurant", 1),
+                Quadruple("Coffee", "#1baf7a", "cafe", 2),
+                Quadruple("Groceries", "#eda100", "cart", 3),
+                Quadruple("Housing", "#e87ba4", "home", 4),
+                Quadruple("Utilities", "#008300", "bolt", 5)
+            )
+            for ((name, colorHex, iconKey, sortOrder) in defaults) {
+                db.execSQL(
+                    "INSERT INTO `categories` (`name`, `color_hex`, `icon_key`, `sort_order`) VALUES (?, ?, ?, ?)",
+                    arrayOf(name, colorHex, iconKey, sortOrder)
+                )
+            }
+        }
+
         @Volatile
         private var instance: KeptangDatabase? = null
 
@@ -50,8 +104,11 @@ abstract class KeptangDatabase : RoomDatabase() {
                     KeptangDatabase::class.java,
                     "keptang.db"
                 )
-                    .addMigrations(MIGRATION_1_2)
+                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3)
+                    .addCallback(SEED_CATEGORIES_CALLBACK)
                     .build().also { instance = it }
             }
     }
 }
+
+private data class Quadruple(val name: String, val colorHex: String, val iconKey: String, val sortOrder: Int)

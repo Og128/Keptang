@@ -31,15 +31,20 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.keptang.R
 import com.keptang.ui.common.parseMoneyInput
+import java.time.LocalDate
+import java.time.ZoneId
+import java.time.ZonedDateTime
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ManualExpenseScreen(
     onSaved: () -> Unit,
     onCancel: () -> Unit,
+    initialDate: LocalDate? = null,
     viewModel: ManualExpenseViewModel = viewModel(factory = ManualExpenseViewModel.Factory)
 ) {
     val settings by viewModel.settings.collectAsStateWithLifecycle()
+    val categoryNames by viewModel.categoryNames.collectAsStateWithLifecycle()
 
     var amountText by remember { mutableStateOf("") }
     var currencyCode by remember(settings.currencyCode) { mutableStateOf(settings.currencyCode) }
@@ -48,8 +53,10 @@ fun ManualExpenseScreen(
     var merchant by remember { mutableStateOf("") }
     var account by remember(settings.defaultAccount) { mutableStateOf(settings.defaultAccount) }
     var paymentMethod by remember { mutableStateOf("") }
+    var dateText by remember { mutableStateOf((initialDate ?: LocalDate.now()).toString()) }
 
     val amountMinorUnits = parseMoneyInput(amountText, currencyCode)
+    val selectedDate = runCatching { LocalDate.parse(dateText) }.getOrNull()
     val defaultCategory = stringResource(R.string.manual_add_default_category)
 
     Column(
@@ -76,7 +83,14 @@ fun ManualExpenseScreen(
                 modifier = Modifier.width(100.dp).padding(start = 8.dp)
             )
         }
-        val categorySuggestions = settings.categories.filter { it.contains(category, ignoreCase = true) }
+        OutlinedTextField(
+            value = dateText,
+            onValueChange = { dateText = it },
+            label = { Text(stringResource(R.string.manual_add_date)) },
+            isError = selectedDate == null,
+            modifier = Modifier.fillMaxWidth().padding(top = 8.dp)
+        )
+        val categorySuggestions = categoryNames.filter { it.contains(category, ignoreCase = true) }
         ExposedDropdownMenuBox(
             expanded = categoryMenuExpanded && categorySuggestions.isNotEmpty(),
             onExpandedChange = { categoryMenuExpanded = it },
@@ -132,6 +146,10 @@ fun ManualExpenseScreen(
             Button(
                 onClick = {
                     val minorUnits = amountMinorUnits ?: return@Button
+                    val date = selectedDate ?: return@Button
+                    val zone = ZoneId.of(settings.timeZoneId)
+                    val occurredAtEpochMillis = date.atTime(ZonedDateTime.now(zone).toLocalTime())
+                        .atZone(zone).toInstant().toEpochMilli()
                     viewModel.save(
                         amountMinorUnits = minorUnits,
                         currencyCode = currencyCode,
@@ -140,10 +158,11 @@ fun ManualExpenseScreen(
                         paymentMethod = paymentMethod,
                         merchant = merchant,
                         timeZoneId = settings.timeZoneId,
+                        occurredAtEpochMillis = occurredAtEpochMillis,
                         onSaved = onSaved
                     )
                 },
-                enabled = amountMinorUnits != null
+                enabled = amountMinorUnits != null && selectedDate != null
             ) {
                 Text(stringResource(R.string.action_save))
             }

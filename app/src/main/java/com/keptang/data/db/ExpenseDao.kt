@@ -42,6 +42,10 @@ interface ExpenseDao {
     @Query("SELECT DISTINCT category FROM expenses ORDER BY category ASC")
     fun observeDistinctCategories(): Flow<List<String>>
 
+    /** Cascades a category rename (see [com.keptang.data.repository.CategoryRepository]). */
+    @Query("UPDATE expenses SET category = :newName WHERE category = :oldName")
+    suspend fun renameCategory(oldName: String, newName: String)
+
     /**
      * Replaces every expense derived from [captureId] with [expenses] in one transaction, so
      * retrying a capture's processing never leaves duplicate rows behind.

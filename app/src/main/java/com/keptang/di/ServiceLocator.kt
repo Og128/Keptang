@@ -7,6 +7,7 @@ import com.keptang.data.db.KeptangDatabase
 import com.keptang.data.repository.AppSettings
 import com.keptang.data.repository.BudgetRepository
 import com.keptang.data.repository.CaptureRepository
+import com.keptang.data.repository.CategoryRepository
 import com.keptang.data.repository.ExpenseRepository
 import com.keptang.data.repository.SettingsRepository
 import com.keptang.notification.NotificationHelper
@@ -58,6 +59,10 @@ object ServiceLocator {
     val expenseRepository: ExpenseRepository by lazy { ExpenseRepository(database.expenseDao()) }
 
     val budgetRepository: BudgetRepository by lazy { BudgetRepository(database.budgetDao()) }
+
+    val categoryRepository: CategoryRepository by lazy {
+        CategoryRepository(database.categoryDao(), database.expenseDao(), database.budgetDao())
+    }
 
     val captureRepository: CaptureRepository by lazy {
         CaptureRepository(database.captureDao(), audioFileStore)

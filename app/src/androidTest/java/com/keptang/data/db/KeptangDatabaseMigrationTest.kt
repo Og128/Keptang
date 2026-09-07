@@ -10,9 +10,10 @@ import org.junit.Test
 import org.junit.runner.RunWith
 
 /**
- * The app's first-ever schema migration (v1 -> v2, adding the `budgets` table). Real captures
- * and expenses already exist on developer devices running v1, so this must actually preserve
- * that data, not just avoid crashing on a fresh install.
+ * The app's schema migrations: v1 -> v2 (adding the `budgets` table) and v2 -> v3 (adding the
+ * `categories` table). Real captures/expenses/budgets already exist on developer devices running
+ * earlier versions, so these must actually preserve that data, not just avoid crashing on a
+ * fresh install.
  */
 @RunWith(AndroidJUnit4::class)
 class KeptangDatabaseMigrationTest {
@@ -68,6 +69,30 @@ class KeptangDatabaseMigrationTest {
         assertEquals(5000L, expenseCursor.getLong(expenseCursor.getColumnIndexOrThrow("amount_minor_units")))
         assertEquals("Coffee", expenseCursor.getString(expenseCursor.getColumnIndexOrThrow("category")))
         expenseCursor.close()
+
+        db.close()
+    }
+
+    @Test
+    fun migrate2To3_addsCategoriesTable_seededWithSixDefaults() {
+        helper.createDatabase(testDbName, 2).apply { close() }
+
+        val db = helper.runMigrationsAndValidate(testDbName, 3, true, KeptangDatabase.MIGRATION_2_3)
+
+        val categoriesTable = db.query("SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'categories'")
+        assertTrue("categories table must exist after migration", categoriesTable.moveToFirst())
+        categoriesTable.close()
+
+        val countCursor = db.query("SELECT COUNT(*) FROM categories")
+        assertTrue(countCursor.moveToFirst())
+        assertEquals(6, countCursor.getInt(0))
+        countCursor.close()
+
+        val coffeeCursor = db.query("SELECT color_hex, icon_key FROM categories WHERE name = 'Coffee'")
+        assertTrue(coffeeCursor.moveToFirst())
+        assertEquals("#1baf7a", coffeeCursor.getString(coffeeCursor.getColumnIndexOrThrow("color_hex")))
+        assertEquals("cafe", coffeeCursor.getString(coffeeCursor.getColumnIndexOrThrow("icon_key")))
+        coffeeCursor.close()
 
         db.close()
     }

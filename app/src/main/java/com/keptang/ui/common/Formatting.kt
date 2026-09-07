@@ -2,6 +2,7 @@ package com.keptang.ui.common
 
 import com.keptang.core.Defaults
 import java.time.Instant
+import java.time.LocalDate
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.util.Locale
@@ -23,6 +24,17 @@ fun parseMoneyInput(majorAmountText: String, currencyCode: String): Long? {
 }
 
 private val dateTimeFormatter = DateTimeFormatter.ofPattern("d MMM yyyy, HH:mm", Locale.US)
+private val dateHeaderFormatter = DateTimeFormatter.ofPattern("d MMM yyyy", Locale.US)
 
 fun formatDateTime(epochMillis: Long, timeZoneId: String): String =
     Instant.ofEpochMilli(epochMillis).atZone(ZoneId.of(timeZoneId)).format(dateTimeFormatter)
+
+fun localDateOf(epochMillis: Long, timeZoneId: String): LocalDate =
+    Instant.ofEpochMilli(epochMillis).atZone(ZoneId.of(timeZoneId)).toLocalDate()
+
+/** "Today" / "Yesterday" / "d MMM yyyy", for ledger date-section headers. */
+fun formatDateHeader(date: LocalDate, today: LocalDate, todayLabel: String, yesterdayLabel: String): String = when (date) {
+    today -> todayLabel
+    today.minusDays(1) -> yesterdayLabel
+    else -> date.format(dateHeaderFormatter)
+}
