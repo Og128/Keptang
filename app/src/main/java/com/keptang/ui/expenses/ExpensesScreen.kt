@@ -47,6 +47,7 @@ private enum class ExpensesViewMode { LIST, CALENDAR }
 @Composable
 fun ExpensesScreen(
     onAddExpense: (LocalDate?) -> Unit,
+    onEditExpense: (String) -> Unit,
     viewModel: ExpensesViewModel = viewModel(factory = ExpensesViewModel.Factory)
 ) {
     val expenses by viewModel.expenses.collectAsStateWithLifecycle()
@@ -93,14 +94,15 @@ fun ExpensesScreen(
                             Text(stringResource(R.string.expenses_empty), style = MaterialTheme.typography.bodyLarge)
                         }
                     } else {
-                        ExpensesLedger(expenses, categoriesByName, timeZoneId)
+                        ExpensesLedger(expenses, categoriesByName, timeZoneId, onEditExpense)
                     }
                 }
                 ExpensesViewMode.CALENDAR -> ExpenseCalendarView(
                     expenses,
                     categoriesByName,
                     selectedCalendarDate,
-                    onDateSelected = { selectedCalendarDate = it }
+                    onDateSelected = { selectedCalendarDate = it },
+                    onEditExpense = onEditExpense
                 )
             }
         }
@@ -111,7 +113,8 @@ fun ExpensesScreen(
 private fun ExpensesLedger(
     expenses: List<ExpenseEntity>,
     categoriesByName: Map<String, CategoryEntity>,
-    timeZoneId: String
+    timeZoneId: String,
+    onEditExpense: (String) -> Unit
 ) {
     val today = LocalDate.now(ZoneId.of(timeZoneId))
     val todayLabel = stringResource(R.string.calendar_today_action)
@@ -130,7 +133,7 @@ private fun ExpensesLedger(
             }
             for (expense in dayExpenses) {
                 item(key = expense.id) {
-                    ExpenseCard(expense, categoriesByName[expense.category])
+                    ExpenseCard(expense, categoriesByName[expense.category], onClick = { onEditExpense(expense.id) })
                 }
             }
         }
@@ -138,10 +141,11 @@ private fun ExpensesLedger(
 }
 
 @Composable
-internal fun ExpenseCard(expense: ExpenseEntity, category: CategoryEntity?) {
+internal fun ExpenseCard(expense: ExpenseEntity, category: CategoryEntity?, onClick: () -> Unit) {
     val tint = category?.let { CategoryColors.parse(it.colorHex).copy(alpha = 0.15f) }
     Card(
-        Modifier.fillMaxWidth().padding(vertical = 6.dp),
+        onClick = onClick,
+        modifier = Modifier.fillMaxWidth().padding(vertical = 6.dp),
         colors = if (tint != null) CardDefaults.cardColors(containerColor = tint) else CardDefaults.cardColors()
     ) {
         Row(Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {

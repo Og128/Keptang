@@ -71,7 +71,8 @@ class CaptureRepository(
                 status = CaptureStatus.PROCESSED,
                 errorMessage = null,
                 createdAtEpochMillis = now,
-                updatedAtEpochMillis = now
+                updatedAtEpochMillis = now,
+                isManual = true
             )
         )
         return id

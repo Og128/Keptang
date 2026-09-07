@@ -6,7 +6,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountBalanceWallet
 import androidx.compose.material.icons.filled.BarChart
 import androidx.compose.material.icons.filled.List
-import androidx.compose.material.icons.filled.RateReview
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
@@ -35,26 +34,27 @@ import com.keptang.ui.dashboard.DashboardScreen
 import com.keptang.ui.expenses.ExpensesScreen
 import com.keptang.ui.expenses.ManualExpenseScreen
 import com.keptang.ui.inbox.InboxScreen
-import com.keptang.ui.review.ReviewScreen
 import com.keptang.ui.settings.SettingsScreen
 
 object Routes {
-    const val INBOX = "inbox"
+    const val INBOX = "inbox?tab={tab}"
     const val EXPENSES = "expenses"
-    const val REVIEW = "review"
     const val BUDGETS = "budgets"
     const val DASHBOARD = "dashboard"
     const val SETTINGS = "settings"
     const val CAPTURE_DETAIL = "capture/{captureId}"
     const val ADD_EXPENSE = "add_expense?date={date}"
+    const val EXPENSE_EDIT = "expense_edit/{expenseId}"
     const val BUDGET_ADD = "budget_add"
     const val BUDGET_EDIT = "budget_edit/{budgetId}"
     const val CATEGORIES = "categories"
     const val CATEGORY_ADD = "category_add"
     const val CATEGORY_EDIT = "category_edit/{categoryName}"
 
+    fun inbox(showReview: Boolean = false) = if (showReview) "inbox?tab=review" else "inbox"
     fun captureDetail(captureId: String) = "capture/$captureId"
     fun addExpense(date: LocalDate?) = if (date != null) "add_expense?date=$date" else "add_expense"
+    fun expenseEdit(expenseId: String) = "expense_edit/$expenseId"
     fun budgetEdit(budgetId: String) = "budget_edit/$budgetId"
     fun categoryEdit(categoryName: String) = "category_edit/${Uri.encode(categoryName)}"
 }
@@ -62,10 +62,9 @@ object Routes {
 private data class BottomTab(val route: String, val labelRes: Int, val icon: androidx.compose.ui.graphics.vector.ImageVector)
 
 private val BOTTOM_TABS = listOf(
-    BottomTab(Routes.EXPENSES, R.string.nav_expenses, Icons.Filled.List),
-    BottomTab(Routes.REVIEW, R.string.nav_review, Icons.Filled.RateReview),
-    BottomTab(Routes.BUDGETS, R.string.nav_budgets, Icons.Filled.AccountBalanceWallet),
     BottomTab(Routes.DASHBOARD, R.string.nav_dashboard, Icons.Filled.BarChart),
+    BottomTab(Routes.EXPENSES, R.string.nav_expenses, Icons.Filled.List),
+    BottomTab(Routes.BUDGETS, R.string.nav_budgets, Icons.Filled.AccountBalanceWallet),
     BottomTab(Routes.SETTINGS, R.string.nav_settings, Icons.Filled.Settings)
 )
 
@@ -84,7 +83,7 @@ fun KeptangNavHost(navController: NavHostController = rememberNavController(), s
                             onClick = {
                                 navController.navigate(tab.route) {
                                     launchSingleTop = true
-                                    popUpTo(Routes.EXPENSES)
+                                    popUpTo(Routes.DASHBOARD)
                                 }
                             },
                             icon = { Icon(tab.icon, contentDescription = null) },
@@ -97,26 +96,40 @@ fun KeptangNavHost(navController: NavHostController = rememberNavController(), s
     ) { padding ->
         NavHost(
             navController = navController,
-            startDestination = Routes.EXPENSES,
+            startDestination = Routes.DASHBOARD,
             modifier = androidx.compose.ui.Modifier.padding(padding)
         ) {
-            composable(Routes.INBOX) {
+            composable(
+                Routes.INBOX,
+                arguments = listOf(navArgument("tab") { type = NavType.StringType; nullable = true; defaultValue = null })
+            ) { backStack ->
                 InboxScreen(
                     onBack = { navController.popBackStack() },
-                    onOpenCapture = { id -> navController.navigate(Routes.captureDetail(id)) }
+                    onOpenCapture = { id -> navController.navigate(Routes.captureDetail(id)) },
+                    startOnReview = backStack.arguments?.getString("tab") == "review"
                 )
             }
             composable(Routes.EXPENSES) {
-                ExpensesScreen(onAddExpense = { date -> navController.navigate(Routes.addExpense(date)) })
+                ExpensesScreen(
+                    onAddExpense = { date -> navController.navigate(Routes.addExpense(date)) },
+                    onEditExpense = { id -> navController.navigate(Routes.expenseEdit(id)) }
+                )
             }
-            composable(Routes.REVIEW) { ReviewScreen() }
             composable(Routes.BUDGETS) {
                 BudgetsScreen(
                     onAddBudget = { navController.navigate(Routes.BUDGET_ADD) },
                     onEditBudget = { id -> navController.navigate(Routes.budgetEdit(id)) }
                 )
             }
-            composable(Routes.DASHBOARD) { DashboardScreen() }
+            composable(Routes.DASHBOARD) {
+                DashboardScreen(
+                    onOpenBudgets = {
+                        navController.navigate(Routes.BUDGETS) { launchSingleTop = true; popUpTo(Routes.DASHBOARD) }
+                    },
+                    onOpenReview = { navController.navigate(Routes.inbox(showReview = true)) },
+                    onEditExpense = { id -> navController.navigate(Routes.expenseEdit(id)) }
+                )
+            }
             composable(Routes.SETTINGS) {
                 SettingsScreen(
                     onOpenInbox = { navController.navigate(Routes.INBOX) },
@@ -157,6 +170,14 @@ fun KeptangNavHost(navController: NavHostController = rememberNavController(), s
                     onSaved = { navController.popBackStack() },
                     onCancel = { navController.popBackStack() },
                     initialDate = dateArg?.let { runCatching { LocalDate.parse(it) }.getOrNull() }
+                )
+            }
+            composable(Routes.EXPENSE_EDIT) { backStack ->
+                val expenseId = backStack.arguments?.getString("expenseId") ?: return@composable
+                ManualExpenseScreen(
+                    onSaved = { navController.popBackStack() },
+                    onCancel = { navController.popBackStack() },
+                    expenseId = expenseId
                 )
             }
             composable(Routes.BUDGET_ADD) {

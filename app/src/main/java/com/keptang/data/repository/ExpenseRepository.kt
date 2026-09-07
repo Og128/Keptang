@@ -21,6 +21,11 @@ class ExpenseRepository(private val expenseDao: ExpenseDao) {
     suspend fun getByCaptureId(captureId: String): List<ExpenseEntity> =
         expenseDao.getByCaptureId(captureId)
 
+    suspend fun getById(id: String): ExpenseEntity? = expenseDao.getById(id)
+
+    /** Most recently created expenses, for the Dashboard's "recent" list. */
+    fun observeRecent(limit: Int): Flow<List<ExpenseEntity>> = expenseDao.observeRecent(limit)
+
     fun observeByCaptureId(captureId: String): Flow<List<ExpenseEntity>> =
         expenseDao.observeByCaptureId(captureId)
 

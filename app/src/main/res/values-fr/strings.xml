@@ -40,6 +40,7 @@
     <string name="nav_settings">Paramètres</string>
 
     <string name="inbox_empty">Aucune capture pour l\'instant. Appuyez sur le widget de l\'écran d\'accueil et énoncez une dépense.</string>
+    <string name="inbox_view_transcripts">Retranscription</string>
     <string name="expenses_empty">Aucune dépense enregistrée pour l\'instant.</string>
     <string name="review_empty">Rien à vérifier pour le moment.</string>
     <string name="budgets_empty">Aucun budget pour l\'instant. Appuyez sur + pour en définir un.</string>
@@ -79,6 +80,12 @@
     <string name="capture_detail_transcript_empty">(aucune pour l\'instant)</string>
     <string name="capture_detail_error_prefix">Erreur : %1$s</string>
     <string name="capture_detail_expenses_title">Dépenses de cette capture</string>
+    <string name="capture_detail_delete_confirm_title">Supprimer cette retranscription ?</string>
+    <string name="capture_detail_delete_confirm_message_with_expense">Cela supprimera aussi la dépense associée.</string>
+    <string name="capture_detail_delete_confirm_message_plain">Cette action est irréversible.</string>
+    <string name="capture_detail_edit_confirm_title">Enregistrer les modifications ?</string>
+    <string name="capture_detail_edit_confirm_message_with_expense">La retranscription sera retraitée et la dépense associée sera mise à jour.</string>
+    <string name="capture_detail_edit_confirm_message_plain">La retranscription sera retraitée.</string>
 
     <string name="review_originally_heard">Entendu à l\'origine : %1$s</string>
     <string name="review_amount_label">Montant (%1$s)</string>
@@ -87,6 +94,9 @@
     <string name="expenses_merchant_placeholder">-</string>
 
     <string name="manual_add_title">Ajouter une dépense</string>
+    <string name="manual_edit_title">Modifier la dépense</string>
+    <string name="manual_edit_warning_title">Enregistrer les modifications ?</string>
+    <string name="manual_edit_warning_message">Seule cette dépense sera modifiée - la retranscription vocale d\'origine reste inchangée.</string>
     <string name="manual_add_amount">Montant</string>
     <string name="manual_add_currency">Devise</string>
     <string name="manual_add_category">Catégorie</string>
@@ -142,4 +152,12 @@
     <string name="dashboard_period_end_label">Date de fin (aaaa-MM-jj)</string>
     <string name="dashboard_total_label">Dépense totale</string>
     <string name="dashboard_empty">Aucune dépense sur cette période.</string>
+    <string name="dashboard_spending_label">Dépenses</string>
+    <string name="dashboard_budget_label">Budget</string>
+    <string name="dashboard_budget_empty">Aucun budget défini pour l\'instant.</string>
+    <string name="dashboard_budget_setup_action">Configurer un budget</string>
+    <string name="dashboard_budget_view_all">Voir tous les budgets</string>
+    <string name="dashboard_review_count">%1$d dépense(s) à vérifier</string>
+    <string name="dashboard_review_action">Vérifier maintenant</string>
+    <string name="dashboard_recent_label">Dépenses récentes</string>
 </resources>

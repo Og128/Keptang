@@ -40,6 +40,7 @@
     <string name="nav_settings">Settings</string>
 
     <string name="inbox_empty">No captures yet. Tap the home-screen widget and speak an expense.</string>
+    <string name="inbox_view_transcripts">Transcripts</string>
     <string name="expenses_empty">No expenses recorded yet.</string>
     <string name="review_empty">Nothing needs review right now.</string>
     <string name="budgets_empty">No budgets yet. Tap + to set one.</string>
@@ -81,6 +82,12 @@
     <string name="capture_detail_transcript_empty">(none yet)</string>
     <string name="capture_detail_error_prefix">Error: %1$s</string>
     <string name="capture_detail_expenses_title">Expenses from this capture</string>
+    <string name="capture_detail_delete_confirm_title">Delete this transcript?</string>
+    <string name="capture_detail_delete_confirm_message_with_expense">This will also delete the attached expense.</string>
+    <string name="capture_detail_delete_confirm_message_plain">This can\'t be undone.</string>
+    <string name="capture_detail_edit_confirm_title">Save changes?</string>
+    <string name="capture_detail_edit_confirm_message_with_expense">This will re-process the transcript and update the attached expense.</string>
+    <string name="capture_detail_edit_confirm_message_plain">This will re-process the transcript.</string>
 
     <string name="review_originally_heard">Originally heard: %1$s</string>
     <string name="review_amount_label">Amount (%1$s)</string>
@@ -89,6 +96,9 @@
     <string name="expenses_merchant_placeholder">-</string>
 
     <string name="manual_add_title">Add expense</string>
+    <string name="manual_edit_title">Edit expense</string>
+    <string name="manual_edit_warning_title">Save changes?</string>
+    <string name="manual_edit_warning_message">Only this expense will be changed - the original voice transcription stays as it was.</string>
     <string name="manual_add_amount">Amount</string>
     <string name="manual_add_currency">Currency</string>
     <string name="manual_add_category">Category</string>
@@ -144,4 +154,12 @@
     <string name="dashboard_period_end_label">End date (yyyy-MM-dd)</string>
     <string name="dashboard_total_label">Total spend</string>
     <string name="dashboard_empty">No expenses in this period.</string>
+    <string name="dashboard_spending_label">Spending</string>
+    <string name="dashboard_budget_label">Budget</string>
+    <string name="dashboard_budget_empty">No budget set yet.</string>
+    <string name="dashboard_budget_setup_action">Set up a budget</string>
+    <string name="dashboard_budget_view_all">View all budgets</string>
+    <string name="dashboard_review_count">%1$d expense(s) need review</string>
+    <string name="dashboard_review_action">Review now</string>
+    <string name="dashboard_recent_label">Recent expenses</string>
 </resources>

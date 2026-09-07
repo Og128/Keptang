@@ -58,7 +58,8 @@ fun ExpenseCalendarView(
     expenses: List<ExpenseEntity>,
     categoriesByName: Map<String, CategoryEntity> = emptyMap(),
     selectedDate: LocalDate?,
-    onDateSelected: (LocalDate) -> Unit
+    onDateSelected: (LocalDate) -> Unit,
+    onEditExpense: (String) -> Unit
 ) {
     val today = remember { LocalDate.now() }
     var displayedMonth by remember { mutableStateOf(YearMonth.from(today)) }
@@ -121,7 +122,9 @@ fun ExpenseCalendarView(
                 Text(stringResource(R.string.calendar_day_empty), style = MaterialTheme.typography.bodyMedium)
             } else {
                 Column {
-                    dayExpenses.forEach { expense -> ExpenseCard(expense, categoriesByName[expense.category]) }
+                    dayExpenses.forEach { expense ->
+                        ExpenseCard(expense, categoriesByName[expense.category], onClick = { onEditExpense(expense.id) })
+                    }
                 }
             }
         }

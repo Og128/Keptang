@@ -60,6 +60,17 @@ class CaptureProcessor(
         return finalize(captureId, result)
     }
 
+    /**
+     * User-initiated edit of a capture's transcript text (from [com.keptang.ui.capturedetail.CaptureDetailScreen]):
+     * re-parses the new text and replaces any linked expense(s), regardless of the capture's
+     * current status - unlike [retry], this doesn't require the capture to be in a retryable
+     * state, since it's a deliberate single edit rather than an automatic/concurrent retry.
+     */
+    suspend fun reprocessEditedTranscript(captureId: String, transcript: String): ProcessOutcome {
+        if (captureRepository.getById(captureId) == null) return ProcessOutcome.NotFound
+        return finalizeSuccess(captureId, transcript)
+    }
+
     private suspend fun finalize(captureId: String, result: TranscriptionResult): ProcessOutcome =
         when (result) {
             is TranscriptionResult.Success -> finalizeSuccess(captureId, result.transcript)

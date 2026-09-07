@@ -10,7 +10,7 @@ import androidx.sqlite.db.SupportSQLiteDatabase
 
 @Database(
     entities = [CaptureEntity::class, ExpenseEntity::class, BudgetEntity::class, CategoryEntity::class],
-    version = 3,
+    version = 4,
     exportSchema = true
 )
 @TypeConverters(Converters::class)
@@ -65,6 +65,18 @@ abstract class KeptangDatabase : RoomDatabase() {
         }
 
         /**
+         * Adds the `is_manual` flag distinguishing hand-typed captures (created by
+         * [com.keptang.data.repository.CaptureRepository.createManualEntry]) from real voice
+         * captures, so editing an Expense can warn when it would leave a linked transcript
+         * behind unchanged.
+         */
+        val MIGRATION_3_4 = object : Migration(3, 4) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE `captures` ADD COLUMN `is_manual` INTEGER NOT NULL DEFAULT 0")
+            }
+        }
+
+        /**
          * Seeds the same six default categories as [MIGRATION_2_3], for a brand-new install:
          * migrations only run when upgrading an *existing* database file, so a fresh install
          * (Room creates the schema straight at the current version) would otherwise end up
@@ -104,7 +116,7 @@ abstract class KeptangDatabase : RoomDatabase() {
                     KeptangDatabase::class.java,
                     "keptang.db"
                 )
-                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3)
+                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4)
                     .addCallback(SEED_CATEGORIES_CALLBACK)
                     .build().also { instance = it }
             }

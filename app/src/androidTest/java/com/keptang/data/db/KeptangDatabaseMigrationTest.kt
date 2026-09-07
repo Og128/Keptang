@@ -10,10 +10,10 @@ import org.junit.Test
 import org.junit.runner.RunWith
 
 /**
- * The app's schema migrations: v1 -> v2 (adding the `budgets` table) and v2 -> v3 (adding the
- * `categories` table). Real captures/expenses/budgets already exist on developer devices running
- * earlier versions, so these must actually preserve that data, not just avoid crashing on a
- * fresh install.
+ * The app's schema migrations: v1 -> v2 (adding the `budgets` table), v2 -> v3 (adding the
+ * `categories` table), and v3 -> v4 (adding `captures.is_manual`). Real captures/expenses/budgets
+ * already exist on developer devices running earlier versions, so these must actually preserve
+ * that data, not just avoid crashing on a fresh install.
  */
 @RunWith(AndroidJUnit4::class)
 class KeptangDatabaseMigrationTest {
@@ -93,6 +93,32 @@ class KeptangDatabaseMigrationTest {
         assertEquals("#1baf7a", coffeeCursor.getString(coffeeCursor.getColumnIndexOrThrow("color_hex")))
         assertEquals("cafe", coffeeCursor.getString(coffeeCursor.getColumnIndexOrThrow("icon_key")))
         coffeeCursor.close()
+
+        db.close()
+    }
+
+    @Test
+    fun migrate3To4_addsIsManualColumn_defaultingExistingCapturesToFalse() {
+        helper.createDatabase(testDbName, 3).apply {
+            execSQL(
+                """
+                INSERT INTO captures
+                    (id, captured_at_epoch_millis, time_zone_id, audio_file_path, duration_millis,
+                     raw_transcript, status, error_message, created_at_epoch_millis, updated_at_epoch_millis)
+                VALUES
+                    ('c1', 1000, 'Asia/Bangkok', '/data/captures/c1.wav', 2000,
+                     'fifty baht for coffee', 'PROCESSED', NULL, 1000, 1000)
+                """.trimIndent()
+            )
+            close()
+        }
+
+        val db = helper.runMigrationsAndValidate(testDbName, 4, true, KeptangDatabase.MIGRATION_3_4)
+
+        val cursor = db.query("SELECT is_manual FROM captures WHERE id = 'c1'")
+        assertTrue(cursor.moveToFirst())
+        assertEquals(0, cursor.getInt(cursor.getColumnIndexOrThrow("is_manual")))
+        cursor.close()
 
         db.close()
     }

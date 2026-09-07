@@ -2,7 +2,6 @@ package com.keptang.ui.dashboard
 
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
-import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -14,11 +13,15 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
+import androidx.compose.material3.Card
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -37,38 +40,66 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.keptang.R
+import com.keptang.budget.BudgetSnapshot
+import com.keptang.budget.BudgetStanding
 import com.keptang.dashboard.CategorySpend
 import com.keptang.dashboard.DashboardFilter
 import com.keptang.ui.common.formatCurrencyExclusionNotice
 import com.keptang.ui.common.formatMoney
+import com.keptang.ui.common.formatPeriodRange
+import com.keptang.ui.expenses.ExpenseCard
 import com.keptang.ui.theme.CategoryColors
 import java.time.LocalDate
 
 @Composable
-fun DashboardScreen(viewModel: DashboardViewModel = viewModel(factory = DashboardViewModel.Factory)) {
+fun DashboardScreen(
+    onOpenBudgets: () -> Unit = {},
+    onOpenReview: () -> Unit = {},
+    onEditExpense: (String) -> Unit = {},
+    viewModel: DashboardViewModel = viewModel(factory = DashboardViewModel.Factory)
+) {
     val snapshot by viewModel.snapshot.collectAsStateWithLifecycle()
     val currentFilter by viewModel.currentFilter.collectAsStateWithLifecycle()
     val categories by viewModel.categories.collectAsStateWithLifecycle()
+    val budgetSnapshot by viewModel.budgetSnapshot.collectAsStateWithLifecycle()
+    val reviewCount by viewModel.reviewCount.collectAsStateWithLifecycle()
+    val recentExpenses by viewModel.recentExpenses.collectAsStateWithLifecycle()
     val categoryColors = categories.associate { it.name to CategoryColors.parse(it.colorHex) }
+    val categoriesByName = categories.associateBy { it.name }
 
-    Column(Modifier.fillMaxSize().padding(16.dp)) {
+    Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp)) {
         Text(stringResource(R.string.nav_dashboard), style = MaterialTheme.typography.headlineSmall)
 
-        Row(Modifier.horizontalScroll(rememberScrollState()).padding(top = 16.dp)) {
+        if (reviewCount > 0) {
+            ReviewCard(reviewCount, onOpenReview)
+        }
+
+        Text(
+            stringResource(R.string.dashboard_spending_label),
+            style = MaterialTheme.typography.titleMedium,
+            modifier = Modifier.padding(top = 20.dp)
+        )
+
+        Row(Modifier.fillMaxWidth().padding(top = 12.dp)) {
             FilterButton(
                 label = stringResource(R.string.dashboard_filter_today),
                 selected = currentFilter is DashboardFilter.Today,
-                onClick = { viewModel.setFilter(DashboardFilter.Today) }
+                onClick = { viewModel.setFilter(DashboardFilter.Today) },
+                modifier = Modifier.weight(1f).padding(end = 4.dp)
             )
             FilterButton(
                 label = stringResource(R.string.dashboard_filter_7d),
                 selected = currentFilter is DashboardFilter.Last7Days,
-                onClick = { viewModel.setFilter(DashboardFilter.Last7Days) }
+                onClick = { viewModel.setFilter(DashboardFilter.Last7Days) },
+                modifier = Modifier.weight(1f).padding(start = 4.dp)
             )
+        }
+        Row(Modifier.fillMaxWidth().padding(top = 8.dp)) {
             FilterButton(
                 label = stringResource(R.string.dashboard_filter_30d),
                 selected = currentFilter is DashboardFilter.Last30Days,
-                onClick = { viewModel.setFilter(DashboardFilter.Last30Days) }
+                onClick = { viewModel.setFilter(DashboardFilter.Last30Days) },
+                modifier = Modifier.weight(1f).padding(end = 4.dp)
             )
             FilterButton(
                 label = stringResource(R.string.dashboard_filter_period),
@@ -76,7 +107,8 @@ fun DashboardScreen(viewModel: DashboardViewModel = viewModel(factory = Dashboar
                 onClick = {
                     val today = LocalDate.now()
                     viewModel.setFilter(DashboardFilter.Period(today.minusDays(6), today))
-                }
+                },
+                modifier = Modifier.weight(1f).padding(start = 4.dp)
             )
         }
 
@@ -116,15 +148,120 @@ fun DashboardScreen(viewModel: DashboardViewModel = viewModel(factory = Dashboar
                 LegendRow(spend, categoryColors[spend.category] ?: MaterialTheme.colorScheme.outline, snapshot.totalMinorUnits, snapshot.defaultCurrencyCode)
             }
         }
+
+        Text(
+            stringResource(R.string.dashboard_budget_label),
+            style = MaterialTheme.typography.titleMedium,
+            modifier = Modifier.padding(top = 28.dp)
+        )
+        BudgetSection(budgetSnapshot = budgetSnapshot, onOpenBudgets = onOpenBudgets)
+
+        if (recentExpenses.isNotEmpty()) {
+            Text(
+                stringResource(R.string.dashboard_recent_label),
+                style = MaterialTheme.typography.titleMedium,
+                modifier = Modifier.padding(top = 28.dp)
+            )
+            Column(Modifier.padding(top = 8.dp)) {
+                recentExpenses.forEach { expense ->
+                    ExpenseCard(expense, categoriesByName[expense.category], onClick = { onEditExpense(expense.id) })
+                }
+            }
+        }
     }
 }
 
 @Composable
-private fun FilterButton(label: String, selected: Boolean, onClick: () -> Unit) {
+private fun ReviewCard(reviewCount: Int, onOpenReview: () -> Unit) {
+    Card(Modifier.fillMaxWidth().padding(top = 16.dp)) {
+        Row(
+            Modifier.fillMaxWidth().padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Text(
+                stringResource(R.string.dashboard_review_count, reviewCount),
+                style = MaterialTheme.typography.bodyMedium,
+                modifier = Modifier.weight(1f).padding(end = 8.dp)
+            )
+            Button(onClick = onOpenReview) {
+                Text(stringResource(R.string.dashboard_review_action))
+            }
+        }
+    }
+}
+
+@Composable
+private fun BudgetSection(budgetSnapshot: BudgetSnapshot, onOpenBudgets: () -> Unit) {
+    val overall = budgetSnapshot.overall
+    if (overall == null && budgetSnapshot.categories.isEmpty()) {
+        Column(Modifier.padding(top = 8.dp)) {
+            Text(stringResource(R.string.dashboard_budget_empty), style = MaterialTheme.typography.bodyMedium)
+            OutlinedButton(onClick = onOpenBudgets, modifier = Modifier.padding(top = 8.dp)) {
+                Text(stringResource(R.string.dashboard_budget_setup_action))
+            }
+        }
+        return
+    }
+
+    Column(Modifier.padding(top = 8.dp)) {
+        overall?.let { standing ->
+            val spentFraction = if (standing.budget.amountMinorUnits > 0L) {
+                (standing.spentMinorUnits.toFloat() / standing.budget.amountMinorUnits.toFloat()).coerceIn(0f, 1f)
+            } else 0f
+            DonutChart(
+                slices = listOf(
+                    MaterialTheme.colorScheme.primary to spentFraction,
+                    MaterialTheme.colorScheme.surfaceVariant to (1f - spentFraction)
+                ),
+                modifier = Modifier.fillMaxWidth().aspectRatio(1.6f)
+            )
+            Text(
+                "${formatMoney(standing.spentMinorUnits, budgetSnapshot.defaultCurrencyCode)} / " +
+                    formatMoney(standing.budget.amountMinorUnits, budgetSnapshot.defaultCurrencyCode),
+                style = MaterialTheme.typography.bodyMedium,
+                modifier = Modifier.padding(top = 8.dp)
+            )
+            Text(
+                formatPeriodRange(standing.periodStart, standing.periodEndExclusive),
+                style = MaterialTheme.typography.bodySmall
+            )
+        }
+        budgetSnapshot.categories.forEach { standing ->
+            CategoryBudgetRow(standing, budgetSnapshot.defaultCurrencyCode)
+        }
+        TextButton(onClick = onOpenBudgets, modifier = Modifier.padding(top = 4.dp)) {
+            Text(stringResource(R.string.dashboard_budget_view_all))
+        }
+    }
+}
+
+@Composable
+private fun CategoryBudgetRow(standing: BudgetStanding, currencyCode: String) {
+    Column(Modifier.fillMaxWidth().padding(top = 12.dp)) {
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+            Text(standing.budget.category.orEmpty(), style = MaterialTheme.typography.bodyMedium)
+            Text(
+                "${formatMoney(standing.spentMinorUnits, currencyCode)} / ${formatMoney(standing.budget.amountMinorUnits, currencyCode)}",
+                style = MaterialTheme.typography.bodySmall
+            )
+        }
+        LinearProgressIndicator(
+            progress = {
+                if (standing.budget.amountMinorUnits <= 0L) 0f
+                else (standing.spentMinorUnits.toFloat() / standing.budget.amountMinorUnits.toFloat()).coerceIn(0f, 1f)
+            },
+            modifier = Modifier.fillMaxWidth().padding(top = 4.dp)
+        )
+    }
+}
+
+@Composable
+private fun FilterButton(label: String, selected: Boolean, onClick: () -> Unit, modifier: Modifier = Modifier) {
     if (selected) {
-        Button(onClick = {}, enabled = false, modifier = Modifier.padding(end = 8.dp)) { Text(label) }
+        Button(onClick = {}, enabled = false, modifier = modifier) { Text(label) }
     } else {
-        OutlinedButton(onClick = onClick, modifier = Modifier.padding(end = 8.dp)) { Text(label) }
+        OutlinedButton(onClick = onClick, modifier = modifier) { Text(label) }
     }
 }
 

@@ -23,6 +23,13 @@ fun parseMoneyInput(majorAmountText: String, currencyCode: String): Long? {
     return (major * 10.0.pow(exponent)).roundToLong()
 }
 
+/** Inverse of [parseMoneyInput]: minor units back to an editable major-unit string, for pre-filling an edit form. */
+fun formatMoneyInput(amountMinorUnits: Long, currencyCode: String): String {
+    val exponent = Defaults.minorUnitExponent(currencyCode)
+    val major = amountMinorUnits / 10.0.pow(exponent)
+    return if (exponent == 0) major.toLong().toString() else String.format(Locale.US, "%.${exponent}f", major)
+}
+
 private val dateTimeFormatter = DateTimeFormatter.ofPattern("d MMM yyyy, HH:mm", Locale.US)
 private val dateHeaderFormatter = DateTimeFormatter.ofPattern("d MMM yyyy", Locale.US)
 

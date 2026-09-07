@@ -52,6 +52,10 @@ class CaptureDetailViewModel(
         viewModelScope.launch { captureRepository.delete(captureIdValue) }
     }
 
+    fun editTranscript(newTranscript: String) {
+        viewModelScope.launch { captureProcessor.reprocessEditedTranscript(captureIdValue, newTranscript) }
+    }
+
     companion object {
         fun factory(captureId: String) = viewModelFactory {
             initializer {

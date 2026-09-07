@@ -38,6 +38,10 @@ interface ExpenseDao {
     @Query("SELECT * FROM expenses ORDER BY occurred_at_epoch_millis DESC")
     fun observeAll(): Flow<List<ExpenseEntity>>
 
+    /** Feeds the Dashboard's "recently added" list, ordered by when the row was created rather than the expense's date. */
+    @Query("SELECT * FROM expenses ORDER BY created_at_epoch_millis DESC LIMIT :limit")
+    fun observeRecent(limit: Int): Flow<List<ExpenseEntity>>
+
     /** Feeds the "pick a category to budget" UI, which only offers categories actually in use. */
     @Query("SELECT DISTINCT category FROM expenses ORDER BY category ASC")
     fun observeDistinctCategories(): Flow<List<String>>

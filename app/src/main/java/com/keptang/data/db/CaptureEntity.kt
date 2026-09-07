@@ -15,5 +15,7 @@ data class CaptureEntity(
     @ColumnInfo(name = "status") val status: CaptureStatus,
     @ColumnInfo(name = "error_message") val errorMessage: String?,
     @ColumnInfo(name = "created_at_epoch_millis") val createdAtEpochMillis: Long,
-    @ColumnInfo(name = "updated_at_epoch_millis") val updatedAtEpochMillis: Long
+    @ColumnInfo(name = "updated_at_epoch_millis") val updatedAtEpochMillis: Long,
+    /** True for a hand-typed entry (no real recording/transcript); false for an actual voice capture. */
+    @ColumnInfo(name = "is_manual", defaultValue = "0") val isManual: Boolean = false
 )
