@@ -1,21 +1,35 @@
 package com.keptang.ui.navigation
 
 import android.net.Uri
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountBalanceWallet
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.BarChart
 import androidx.compose.material.icons.filled.List
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
-import androidx.compose.material3.NavigationBar
-import androidx.compose.material3.NavigationBarItem
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
@@ -59,7 +73,7 @@ object Routes {
     fun categoryEdit(categoryName: String) = "category_edit/${Uri.encode(categoryName)}"
 }
 
-private data class BottomTab(val route: String, val labelRes: Int, val icon: androidx.compose.ui.graphics.vector.ImageVector)
+private data class BottomTab(val route: String, val labelRes: Int, val icon: ImageVector)
 
 private val BOTTOM_TABS = listOf(
     BottomTab(Routes.DASHBOARD, R.string.nav_dashboard, Icons.Filled.BarChart),
@@ -76,21 +90,16 @@ fun KeptangNavHost(navController: NavHostController = rememberNavController(), s
     Scaffold(
         bottomBar = {
             if (currentRoute == null || BOTTOM_TABS.any { it.route == currentRoute }) {
-                NavigationBar {
-                    BOTTOM_TABS.forEach { tab ->
-                        NavigationBarItem(
-                            selected = currentRoute == tab.route,
-                            onClick = {
-                                navController.navigate(tab.route) {
-                                    launchSingleTop = true
-                                    popUpTo(Routes.DASHBOARD)
-                                }
-                            },
-                            icon = { Icon(tab.icon, contentDescription = null) },
-                            label = { Text(stringResource(tab.labelRes)) }
-                        )
-                    }
-                }
+                KeptangBottomBar(
+                    currentRoute = currentRoute,
+                    onNavigate = { route ->
+                        navController.navigate(route) {
+                            launchSingleTop = true
+                            popUpTo(Routes.DASHBOARD)
+                        }
+                    },
+                    onAddExpense = { navController.navigate(Routes.addExpense(null)) }
+                )
             }
         }
     ) { padding ->
@@ -202,5 +211,44 @@ fun KeptangNavHost(navController: NavHostController = rememberNavController(), s
         if (startCaptureId != null) {
             navController.navigate(Routes.captureDetail(startCaptureId))
         }
+    }
+}
+
+/** 2+2 tabs with a center-embedded, raised FAB for adding an expense from anywhere - mirrors the Lunch Money nav pattern. */
+@Composable
+private fun KeptangBottomBar(currentRoute: String?, onNavigate: (String) -> Unit, onAddExpense: () -> Unit) {
+    val leftTabs = BOTTOM_TABS.take(2)
+    val rightTabs = BOTTOM_TABS.drop(2)
+
+    Box(Modifier.fillMaxWidth()) {
+        Surface(tonalElevation = 3.dp, modifier = Modifier.fillMaxWidth()) {
+            Row(Modifier.fillMaxWidth().height(72.dp), verticalAlignment = Alignment.CenterVertically) {
+                leftTabs.forEach { tab ->
+                    BottomBarItem(tab, selected = currentRoute == tab.route, onClick = { onNavigate(tab.route) }, modifier = Modifier.weight(1f))
+                }
+                Spacer(Modifier.weight(1f))
+                rightTabs.forEach { tab ->
+                    BottomBarItem(tab, selected = currentRoute == tab.route, onClick = { onNavigate(tab.route) }, modifier = Modifier.weight(1f))
+                }
+            }
+        }
+        FloatingActionButton(
+            onClick = onAddExpense,
+            modifier = Modifier.align(Alignment.TopCenter).offset(y = (-28).dp)
+        ) {
+            Icon(Icons.Filled.Add, contentDescription = stringResource(R.string.manual_add_title))
+        }
+    }
+}
+
+@Composable
+private fun BottomBarItem(tab: BottomTab, selected: Boolean, onClick: () -> Unit, modifier: Modifier = Modifier) {
+    val tint = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+    Column(
+        modifier = modifier.clickable(onClick = onClick).padding(vertical = 8.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Icon(tab.icon, contentDescription = null, tint = tint)
+        Text(stringResource(tab.labelRes), style = MaterialTheme.typography.labelSmall, color = tint, modifier = Modifier.padding(top = 2.dp))
     }
 }

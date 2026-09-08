@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
+import com.keptang.data.db.CategoryEntity
 import com.keptang.data.db.ExpenseEntity
 import com.keptang.data.repository.AppSettings
 import com.keptang.data.repository.CaptureRepository
@@ -15,7 +16,6 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
@@ -30,8 +30,7 @@ class ManualExpenseViewModel(
     val settings: StateFlow<AppSettings> = settingsRepository.settings
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), AppSettings())
 
-    val categoryNames: StateFlow<List<String>> = categoryRepository.observeAll()
-        .map { categories -> categories.map { it.name } }
+    val categories: StateFlow<List<CategoryEntity>> = categoryRepository.observeAll()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     private val _existingExpense = MutableStateFlow<ExpenseEntity?>(null)
@@ -66,6 +65,7 @@ class ManualExpenseViewModel(
         account: String?,
         paymentMethod: String?,
         merchant: String?,
+        notes: String?,
         timeZoneId: String,
         occurredAtEpochMillis: Long,
         onSaved: () -> Unit
@@ -82,7 +82,8 @@ class ManualExpenseViewModel(
                         category = category,
                         account = account?.takeIf { it.isNotBlank() },
                         paymentMethod = paymentMethod?.takeIf { it.isNotBlank() },
-                        merchant = merchant?.takeIf { it.isNotBlank() }
+                        merchant = merchant?.takeIf { it.isNotBlank() },
+                        notes = notes?.takeIf { it.isNotBlank() }
                     )
                 )
             } else {
@@ -96,7 +97,8 @@ class ManualExpenseViewModel(
                     category = category,
                     account = account?.takeIf { it.isNotBlank() },
                     paymentMethod = paymentMethod?.takeIf { it.isNotBlank() },
-                    merchant = merchant?.takeIf { it.isNotBlank() }
+                    merchant = merchant?.takeIf { it.isNotBlank() },
+                    notes = notes?.takeIf { it.isNotBlank() }
                 )
             }
             onSaved()

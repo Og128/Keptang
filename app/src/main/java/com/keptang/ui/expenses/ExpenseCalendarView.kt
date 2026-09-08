@@ -17,6 +17,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -52,6 +53,7 @@ private val WEEKDAY_HEADER_LABELS = listOf(
 )
 
 private val monthYearFormatter = DateTimeFormatter.ofPattern("MMMM yyyy", Locale.US)
+private val dayHeaderFormatter = DateTimeFormatter.ofPattern("EEEE, d MMM", Locale.US)
 
 @Composable
 fun ExpenseCalendarView(
@@ -59,7 +61,8 @@ fun ExpenseCalendarView(
     categoriesByName: Map<String, CategoryEntity> = emptyMap(),
     selectedDate: LocalDate?,
     onDateSelected: (LocalDate) -> Unit,
-    onEditExpense: (String) -> Unit
+    onEditExpense: (String) -> Unit,
+    onAddExpense: (LocalDate) -> Unit = {}
 ) {
     val today = remember { LocalDate.now() }
     var displayedMonth by remember { mutableStateOf(YearMonth.from(today)) }
@@ -117,6 +120,16 @@ fun ExpenseCalendarView(
         HorizontalDivider(Modifier.padding(vertical = 12.dp))
 
         selectedDate?.let { date ->
+            Row(
+                Modifier.fillMaxWidth().padding(bottom = 8.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(date.format(dayHeaderFormatter), style = MaterialTheme.typography.titleSmall)
+                IconButton(onClick = { onAddExpense(date) }) {
+                    Icon(Icons.Filled.Add, contentDescription = stringResource(R.string.manual_add_title))
+                }
+            }
             val dayExpenses = byDay[date].orEmpty()
             if (dayExpenses.isEmpty()) {
                 Text(stringResource(R.string.calendar_day_empty), style = MaterialTheme.typography.bodyMedium)

@@ -1,21 +1,21 @@
 package com.keptang.ui.dashboard
 
-import androidx.compose.foundation.Canvas
-import androidx.compose.foundation.background
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
@@ -30,19 +30,13 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.StrokeCap
-import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.keptang.R
 import com.keptang.budget.BudgetSnapshot
-import com.keptang.budget.BudgetStanding
-import com.keptang.dashboard.CategorySpend
 import com.keptang.dashboard.DashboardFilter
 import com.keptang.ui.common.formatCurrencyExclusionNotice
 import com.keptang.ui.common.formatMoney
@@ -117,17 +111,18 @@ fun DashboardScreen(
             PeriodPicker(periodFilter, onChange = viewModel::setFilter)
         }
 
-        Text(
-            stringResource(R.string.dashboard_total_label),
-            style = MaterialTheme.typography.labelLarge,
-            modifier = Modifier.padding(top = 24.dp)
-        )
-        Text(
-            formatMoney(snapshot.totalMinorUnits, snapshot.defaultCurrencyCode),
-            style = MaterialTheme.typography.headlineMedium
-        )
+        Row(Modifier.fillMaxWidth().padding(top = 24.dp), horizontalArrangement = Arrangement.SpaceBetween) {
+            Column {
+                Text(stringResource(R.string.dashboard_total_label), style = MaterialTheme.typography.labelLarge)
+                Text(formatMoney(snapshot.totalMinorUnits, snapshot.defaultCurrencyCode), style = MaterialTheme.typography.headlineMedium)
+            }
+            Column(horizontalAlignment = Alignment.End) {
+                Text(stringResource(R.string.dashboard_transactions_label), style = MaterialTheme.typography.labelLarge)
+                Text(snapshot.transactionCount.toString(), style = MaterialTheme.typography.headlineMedium)
+            }
+        }
         formatCurrencyExclusionNotice(snapshot.excludedByCurrency)?.let { notice ->
-            Text(notice, style = MaterialTheme.typography.bodySmall)
+            Text(notice, style = MaterialTheme.typography.bodySmall, modifier = Modifier.padding(top = 4.dp))
         }
 
         if (snapshot.byCategory.isEmpty()) {
@@ -137,15 +132,18 @@ fun DashboardScreen(
                 modifier = Modifier.padding(top = 24.dp)
             )
         } else {
-            DonutChart(
-                slices = snapshot.byCategory.map { spend ->
-                    (categoryColors[spend.category] ?: MaterialTheme.colorScheme.outline) to
-                        spend.spentMinorUnits.toFloat() / snapshot.totalMinorUnits.toFloat()
-                },
-                modifier = Modifier.fillMaxWidth().aspectRatio(1f).padding(top = 16.dp, bottom = 16.dp)
-            )
-            snapshot.byCategory.forEach { spend ->
-                LegendRow(spend, categoryColors[spend.category] ?: MaterialTheme.colorScheme.outline, snapshot.totalMinorUnits, snapshot.defaultCurrencyCode)
+            Column(Modifier.padding(top = 16.dp)) {
+                snapshot.byCategory.forEach { spend ->
+                    CategoryBarRow(
+                        label = spend.category,
+                        color = categoryColors[spend.category] ?: MaterialTheme.colorScheme.outline,
+                        amountMinorUnits = spend.spentMinorUnits,
+                        fractionOfTotal = if (snapshot.totalMinorUnits > 0) {
+                            spend.spentMinorUnits.toFloat() / snapshot.totalMinorUnits.toFloat()
+                        } else 0f,
+                        currencyCode = snapshot.defaultCurrencyCode
+                    )
+                }
             }
         }
 
@@ -173,16 +171,20 @@ fun DashboardScreen(
 
 @Composable
 private fun ReviewCard(reviewCount: Int, onOpenReview: () -> Unit) {
-    Card(Modifier.fillMaxWidth().padding(top = 16.dp)) {
+    Card(
+        Modifier.fillMaxWidth().padding(top = 16.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.3f)),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.error)
+    ) {
         Row(
             Modifier.fillMaxWidth().padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
+            verticalAlignment = Alignment.CenterVertically
         ) {
+            Icon(Icons.Filled.Info, contentDescription = null, tint = MaterialTheme.colorScheme.error)
             Text(
                 stringResource(R.string.dashboard_review_count, reviewCount),
                 style = MaterialTheme.typography.bodyMedium,
-                modifier = Modifier.weight(1f).padding(end = 8.dp)
+                modifier = Modifier.weight(1f).padding(horizontal = 12.dp)
             )
             Button(onClick = onOpenReview) {
                 Text(stringResource(R.string.dashboard_review_action))
@@ -206,29 +208,33 @@ private fun BudgetSection(budgetSnapshot: BudgetSnapshot, onOpenBudgets: () -> U
 
     Column(Modifier.padding(top = 8.dp)) {
         overall?.let { standing ->
-            val spentFraction = if (standing.budget.amountMinorUnits > 0L) {
-                (standing.spentMinorUnits.toFloat() / standing.budget.amountMinorUnits.toFloat()).coerceIn(0f, 1f)
-            } else 0f
-            DonutChart(
-                slices = listOf(
-                    MaterialTheme.colorScheme.primary to spentFraction,
-                    MaterialTheme.colorScheme.surfaceVariant to (1f - spentFraction)
-                ),
-                modifier = Modifier.fillMaxWidth().aspectRatio(1.6f)
-            )
-            Text(
-                "${formatMoney(standing.spentMinorUnits, budgetSnapshot.defaultCurrencyCode)} / " +
-                    formatMoney(standing.budget.amountMinorUnits, budgetSnapshot.defaultCurrencyCode),
-                style = MaterialTheme.typography.bodyMedium,
-                modifier = Modifier.padding(top = 8.dp)
+            CategoryBarRow(
+                label = stringResource(R.string.budgets_overall_label),
+                color = MaterialTheme.colorScheme.primary,
+                amountMinorUnits = standing.spentMinorUnits,
+                fractionOfTotal = if (standing.budget.amountMinorUnits > 0L) {
+                    (standing.spentMinorUnits.toFloat() / standing.budget.amountMinorUnits.toFloat()).coerceIn(0f, 1f)
+                } else 0f,
+                currencyCode = budgetSnapshot.defaultCurrencyCode,
+                totalLabel = formatMoney(standing.budget.amountMinorUnits, budgetSnapshot.defaultCurrencyCode)
             )
             Text(
                 formatPeriodRange(standing.periodStart, standing.periodEndExclusive),
-                style = MaterialTheme.typography.bodySmall
+                style = MaterialTheme.typography.bodySmall,
+                modifier = Modifier.padding(bottom = 8.dp)
             )
         }
         budgetSnapshot.categories.forEach { standing ->
-            CategoryBudgetRow(standing, budgetSnapshot.defaultCurrencyCode)
+            CategoryBarRow(
+                label = standing.budget.category.orEmpty(),
+                color = MaterialTheme.colorScheme.primary,
+                amountMinorUnits = standing.spentMinorUnits,
+                fractionOfTotal = if (standing.budget.amountMinorUnits > 0L) {
+                    (standing.spentMinorUnits.toFloat() / standing.budget.amountMinorUnits.toFloat()).coerceIn(0f, 1f)
+                } else 0f,
+                currencyCode = budgetSnapshot.defaultCurrencyCode,
+                totalLabel = formatMoney(standing.budget.amountMinorUnits, budgetSnapshot.defaultCurrencyCode)
+            )
         }
         TextButton(onClick = onOpenBudgets, modifier = Modifier.padding(top = 4.dp)) {
             Text(stringResource(R.string.dashboard_budget_view_all))
@@ -236,22 +242,32 @@ private fun BudgetSection(budgetSnapshot: BudgetSnapshot, onOpenBudgets: () -> U
     }
 }
 
+/** A category/budget name, a colored progress bar, and its amount - used for both the Spending and Budget breakdowns. */
 @Composable
-private fun CategoryBudgetRow(standing: BudgetStanding, currencyCode: String) {
-    Column(Modifier.fillMaxWidth().padding(top = 12.dp)) {
+private fun CategoryBarRow(
+    label: String,
+    color: Color,
+    amountMinorUnits: Long,
+    fractionOfTotal: Float,
+    currencyCode: String,
+    totalLabel: String? = null
+) {
+    Column(Modifier.fillMaxWidth().padding(vertical = 6.dp)) {
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-            Text(standing.budget.category.orEmpty(), style = MaterialTheme.typography.bodyMedium)
+            Text(label, style = MaterialTheme.typography.bodyMedium, color = color)
             Text(
-                "${formatMoney(standing.spentMinorUnits, currencyCode)} / ${formatMoney(standing.budget.amountMinorUnits, currencyCode)}",
-                style = MaterialTheme.typography.bodySmall
+                if (totalLabel != null) "${formatMoney(amountMinorUnits, currencyCode)} / $totalLabel" else formatMoney(amountMinorUnits, currencyCode),
+                style = MaterialTheme.typography.bodyMedium
             )
         }
         LinearProgressIndicator(
-            progress = {
-                if (standing.budget.amountMinorUnits <= 0L) 0f
-                else (standing.spentMinorUnits.toFloat() / standing.budget.amountMinorUnits.toFloat()).coerceIn(0f, 1f)
-            },
-            modifier = Modifier.fillMaxWidth().padding(top = 4.dp)
+            progress = { fractionOfTotal.coerceIn(0f, 1f) },
+            color = color,
+            trackColor = color.copy(alpha = 0.15f),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(top = 4.dp)
+                .clip(RoundedCornerShape(4.dp))
         )
     }
 }
@@ -288,50 +304,6 @@ private fun PeriodPicker(filter: DashboardFilter.Period, onChange: (DashboardFil
             },
             label = { Text(stringResource(R.string.dashboard_period_end_label)) },
             modifier = Modifier.weight(1f)
-        )
-    }
-}
-
-@Composable
-private fun DonutChart(slices: List<Pair<Color, Float>>, modifier: Modifier = Modifier) {
-    Canvas(modifier) {
-        val strokeWidth = size.minDimension * 0.22f
-        val diameter = size.minDimension - strokeWidth
-        val topLeft = Offset((size.width - diameter) / 2f, (size.height - diameter) / 2f)
-        var startAngle = -90f
-        slices.forEach { (color, fraction) ->
-            val sweep = (fraction * 360f).coerceIn(0f, 360f)
-            // A 2-degree surface gap between slices, per the dataviz skill's spacer rule.
-            val gap = if (slices.size > 1) 2f else 0f
-            drawArc(
-                color = color,
-                startAngle = startAngle + gap / 2,
-                sweepAngle = (sweep - gap).coerceAtLeast(0f),
-                useCenter = false,
-                topLeft = topLeft,
-                size = Size(diameter, diameter),
-                style = Stroke(width = strokeWidth, cap = StrokeCap.Butt)
-            )
-            startAngle += sweep
-        }
-    }
-}
-
-@Composable
-private fun LegendRow(spend: CategorySpend, color: Color, totalMinorUnits: Long, currencyCode: String) {
-    val percent = if (totalMinorUnits > 0) (spend.spentMinorUnits * 100f / totalMinorUnits) else 0f
-    Row(
-        Modifier.fillMaxWidth().padding(vertical = 4.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.SpaceBetween
-    ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Box(Modifier.size(12.dp).clip(CircleShape).background(color))
-            Text(spend.category, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.padding(start = 8.dp))
-        }
-        Text(
-            "${formatMoney(spend.spentMinorUnits, currencyCode)} · ${"%.0f".format(percent)}%",
-            style = MaterialTheme.typography.bodyMedium
         )
     }
 }

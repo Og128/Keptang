@@ -57,7 +57,7 @@ class DashboardViewModel(
     }.stateIn(
         viewModelScope,
         SharingStarted.WhileSubscribed(5000),
-        DashboardSnapshot(0L, emptyList(), emptyMap(), Defaults.CURRENCY_CODE)
+        DashboardSnapshot(0L, 0, emptyList(), emptyMap(), Defaults.CURRENCY_CODE)
     )
 
     val categories: StateFlow<List<CategoryEntity>> = categoryRepository.observeAll()

@@ -9,6 +9,7 @@ data class CategorySpend(val category: String, val spentMinorUnits: Long)
 
 data class DashboardSnapshot(
     val totalMinorUnits: Long,
+    val transactionCount: Int,
     val byCategory: List<CategorySpend>,
     val excludedByCurrency: Map<String, Int>,
     val defaultCurrencyCode: String
@@ -51,6 +52,7 @@ object DashboardCalculator {
 
         return DashboardSnapshot(
             totalMinorUnits = counted.sumOf { it.amountMinorUnits },
+            transactionCount = counted.size,
             byCategory = byCategory,
             excludedByCurrency = excluded.groupingBy { it.currencyCode }.eachCount(),
             defaultCurrencyCode = defaultCurrencyCode

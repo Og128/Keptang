@@ -42,6 +42,7 @@
     <string name="inbox_empty">Aucune capture pour l\'instant. Appuyez sur le widget de l\'écran d\'accueil et énoncez une dépense.</string>
     <string name="inbox_view_transcripts">Retranscription</string>
     <string name="expenses_empty">Aucune dépense enregistrée pour l\'instant.</string>
+    <string name="expenses_empty_period">Aucune dépense ce mois-ci.</string>
     <string name="review_empty">Rien à vérifier pour le moment.</string>
     <string name="budgets_empty">Aucun budget pour l\'instant. Appuyez sur + pour en définir un.</string>
 
@@ -61,6 +62,8 @@
     <string name="settings_audio_retention">Conservation audio (jours)</string>
     <string name="settings_inbox_button">Boîte de réception</string>
     <string name="settings_edit_categories_button">Modifier les catégories</string>
+    <string name="settings_debug_label">Débogage</string>
+    <string name="settings_seed_demo_data_button">Générer 50 dépenses de test</string>
     <string name="settings_language_label">Langue</string>
     <!-- settings_language_english / settings_language_french intentionally not overridden here -
          see the comment in values/strings.xml: language names are always shown as endonyms. -->
@@ -100,14 +103,29 @@
     <string name="manual_add_amount">Montant</string>
     <string name="manual_add_currency">Devise</string>
     <string name="manual_add_category">Catégorie</string>
-    <string name="manual_add_date">Date (aaaa-mm-jj)</string>
-    <string name="manual_add_merchant">Commerçant (facultatif)</string>
-    <string name="manual_add_account">Compte (facultatif)</string>
-    <string name="manual_add_payment_method">Moyen de paiement (facultatif)</string>
+    <string name="manual_add_date">Date</string>
+    <string name="manual_add_merchant">Commerçant</string>
+    <string name="manual_add_account">Compte</string>
+    <string name="manual_add_payment_method">Moyen de paiement</string>
+    <string name="manual_add_notes">Notes</string>
+    <string name="manual_add_notes_placeholder">Ajouter une note…</string>
     <string name="manual_add_default_category">Non catégorisé</string>
+    <string name="manual_status_label">Statut</string>
+    <string name="manual_status_approved">Approuvée</string>
+    <string name="manual_details_section">Détails de la transaction</string>
+    <string name="manual_more_info_section">Plus d\'infos</string>
 
     <string name="budgets_overall_label">Global</string>
     <string name="budgets_other_label">Autre</string>
+    <string name="budgets_overview_label">Aperçu</string>
+    <string name="budgets_breakdown_label">Répartition</string>
+    <string name="budgets_current_expenses_label">Dépenses actuelles</string>
+    <string name="budgets_you_budgeted_label">Vous avez budgété</string>
+    <string name="budgets_available_label">Disponible</string>
+    <string name="budgets_no_budget_label">Aucun budget</string>
+    <string name="budgets_column_budgeted">Budgété</string>
+    <string name="budgets_column_activity">Activité</string>
+    <string name="budgets_column_available">Disponible</string>
     <string name="budget_add_title">Ajouter un budget</string>
     <string name="budget_edit_title">Modifier le budget</string>
     <string name="budget_form_target_label">Budget pour</string>
@@ -130,6 +148,8 @@
     <string name="expenses_view_list">Liste</string>
     <string name="expenses_view_calendar">Calendrier</string>
     <string name="calendar_today_action">Aujourd\'hui</string>
+    <string name="calendar_previous_month">Mois précédent</string>
+    <string name="calendar_next_month">Mois suivant</string>
     <string name="calendar_day_empty">Aucune dépense ce jour-là.</string>
 
     <plurals name="budget_currency_excluded_notice">
@@ -151,6 +171,7 @@
     <string name="dashboard_period_start_label">Date de début (aaaa-MM-jj)</string>
     <string name="dashboard_period_end_label">Date de fin (aaaa-MM-jj)</string>
     <string name="dashboard_total_label">Dépense totale</string>
+    <string name="dashboard_transactions_label">Transactions</string>
     <string name="dashboard_empty">Aucune dépense sur cette période.</string>
     <string name="dashboard_spending_label">Dépenses</string>
     <string name="dashboard_budget_label">Budget</string>

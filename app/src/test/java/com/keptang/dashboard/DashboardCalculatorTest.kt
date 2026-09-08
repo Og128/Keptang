@@ -126,4 +126,18 @@ class DashboardCalculatorTest {
         assertEquals(0L, snapshot.totalMinorUnits)
         assertTrue(snapshot.byCategory.isEmpty())
     }
+
+    @Test
+    fun `transaction count reflects only default-currency expenses in range`() {
+        val expenses = listOf(
+            expense(100, "Coffee", today, currencyCode = "THB"),
+            expense(200, "Dining", today, currencyCode = "THB"),
+            expense(300, "Coffee", today, currencyCode = "USD"),
+            expense(400, "Coffee", today.minusDays(1), currencyCode = "THB")
+        )
+
+        val snapshot = DashboardCalculator.compute(expenses, defaultCurrency, DashboardFilter.Today, today)
+
+        assertEquals(2, snapshot.transactionCount)
+    }
 }

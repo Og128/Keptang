@@ -42,6 +42,7 @@
     <string name="inbox_empty">No captures yet. Tap the home-screen widget and speak an expense.</string>
     <string name="inbox_view_transcripts">Transcripts</string>
     <string name="expenses_empty">No expenses recorded yet.</string>
+    <string name="expenses_empty_period">No expenses this month.</string>
     <string name="review_empty">Nothing needs review right now.</string>
     <string name="budgets_empty">No budgets yet. Tap + to set one.</string>
 
@@ -61,6 +62,8 @@
     <string name="settings_audio_retention">Audio retention (days)</string>
     <string name="settings_inbox_button">Inbox</string>
     <string name="settings_edit_categories_button">Edit categories</string>
+    <string name="settings_debug_label">Debug</string>
+    <string name="settings_seed_demo_data_button">Seed 50 demo expenses</string>
     <string name="settings_language_label">Language</string>
     <!-- Language names are always shown as endonyms (each language names itself), never
          translated - so these two keys are deliberately identical in every values-*/strings.xml. -->
@@ -102,14 +105,29 @@
     <string name="manual_add_amount">Amount</string>
     <string name="manual_add_currency">Currency</string>
     <string name="manual_add_category">Category</string>
-    <string name="manual_add_date">Date (yyyy-mm-dd)</string>
-    <string name="manual_add_merchant">Merchant (optional)</string>
-    <string name="manual_add_account">Account (optional)</string>
-    <string name="manual_add_payment_method">Payment method (optional)</string>
+    <string name="manual_add_date">Date</string>
+    <string name="manual_add_merchant">Merchant</string>
+    <string name="manual_add_account">Account</string>
+    <string name="manual_add_payment_method">Payment method</string>
+    <string name="manual_add_notes">Notes</string>
+    <string name="manual_add_notes_placeholder">Add a note…</string>
     <string name="manual_add_default_category">Uncategorized</string>
+    <string name="manual_status_label">Status</string>
+    <string name="manual_status_approved">Approved</string>
+    <string name="manual_details_section">Transaction Details</string>
+    <string name="manual_more_info_section">More Info</string>
 
     <string name="budgets_overall_label">Overall</string>
     <string name="budgets_other_label">Other</string>
+    <string name="budgets_overview_label">Overview</string>
+    <string name="budgets_breakdown_label">Breakdown</string>
+    <string name="budgets_current_expenses_label">Current Expenses</string>
+    <string name="budgets_you_budgeted_label">You Budgeted</string>
+    <string name="budgets_available_label">Available</string>
+    <string name="budgets_no_budget_label">No budget</string>
+    <string name="budgets_column_budgeted">Budgeted</string>
+    <string name="budgets_column_activity">Activity</string>
+    <string name="budgets_column_available">Available</string>
     <string name="budget_add_title">Add budget</string>
     <string name="budget_edit_title">Edit budget</string>
     <string name="budget_form_target_label">Budget for</string>
@@ -132,6 +150,8 @@
     <string name="expenses_view_list">List</string>
     <string name="expenses_view_calendar">Calendar</string>
     <string name="calendar_today_action">Today</string>
+    <string name="calendar_previous_month">Previous month</string>
+    <string name="calendar_next_month">Next month</string>
     <string name="calendar_day_empty">No expenses on this day.</string>
 
     <plurals name="budget_currency_excluded_notice">
@@ -153,6 +173,7 @@
     <string name="dashboard_period_start_label">Start date (yyyy-MM-dd)</string>
     <string name="dashboard_period_end_label">End date (yyyy-MM-dd)</string>
     <string name="dashboard_total_label">Total spend</string>
+    <string name="dashboard_transactions_label">Transactions</string>
     <string name="dashboard_empty">No expenses in this period.</string>
     <string name="dashboard_spending_label">Spending</string>
     <string name="dashboard_budget_label">Budget</string>
