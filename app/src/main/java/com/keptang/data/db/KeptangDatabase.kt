@@ -10,7 +10,7 @@ import androidx.sqlite.db.SupportSQLiteDatabase
 
 @Database(
     entities = [CaptureEntity::class, ExpenseEntity::class, BudgetEntity::class, CategoryEntity::class],
-    version = 4,
+    version = 5,
     exportSchema = true
 )
 @TypeConverters(Converters::class)
@@ -76,6 +76,13 @@ abstract class KeptangDatabase : RoomDatabase() {
             }
         }
 
+        /** Adds a free-text `notes` field to expenses, editable from the Add/Edit Expense screen. */
+        val MIGRATION_4_5 = object : Migration(4, 5) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE `expenses` ADD COLUMN `notes` TEXT")
+            }
+        }
+
         /**
          * Seeds the same six default categories as [MIGRATION_2_3], for a brand-new install:
          * migrations only run when upgrading an *existing* database file, so a fresh install
@@ -116,7 +123,7 @@ abstract class KeptangDatabase : RoomDatabase() {
                     KeptangDatabase::class.java,
                     "keptang.db"
                 )
-                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4)
+                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5)
                     .addCallback(SEED_CATEGORIES_CALLBACK)
                     .build().also { instance = it }
             }

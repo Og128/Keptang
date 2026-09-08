@@ -11,9 +11,10 @@ import org.junit.runner.RunWith
 
 /**
  * The app's schema migrations: v1 -> v2 (adding the `budgets` table), v2 -> v3 (adding the
- * `categories` table), and v3 -> v4 (adding `captures.is_manual`). Real captures/expenses/budgets
- * already exist on developer devices running earlier versions, so these must actually preserve
- * that data, not just avoid crashing on a fresh install.
+ * `categories` table), v3 -> v4 (adding `captures.is_manual`), and v4 -> v5 (adding
+ * `expenses.notes`). Real captures/expenses/budgets already exist on developer devices running
+ * earlier versions, so these must actually preserve that data, not just avoid crashing on a
+ * fresh install.
  */
 @RunWith(AndroidJUnit4::class)
 class KeptangDatabaseMigrationTest {
@@ -118,6 +119,43 @@ class KeptangDatabaseMigrationTest {
         val cursor = db.query("SELECT is_manual FROM captures WHERE id = 'c1'")
         assertTrue(cursor.moveToFirst())
         assertEquals(0, cursor.getInt(cursor.getColumnIndexOrThrow("is_manual")))
+        cursor.close()
+
+        db.close()
+    }
+
+    @Test
+    fun migrate4To5_addsNotesColumn_defaultingExistingExpensesToNull() {
+        helper.createDatabase(testDbName, 4).apply {
+            execSQL(
+                """
+                INSERT INTO captures
+                    (id, captured_at_epoch_millis, time_zone_id, audio_file_path, duration_millis,
+                     raw_transcript, status, error_message, created_at_epoch_millis, updated_at_epoch_millis, is_manual)
+                VALUES
+                    ('c1', 1000, 'Asia/Bangkok', '/data/captures/c1.wav', 2000,
+                     'fifty baht for coffee', 'PROCESSED', NULL, 1000, 1000, 0)
+                """.trimIndent()
+            )
+            execSQL(
+                """
+                INSERT INTO expenses
+                    (id, capture_id, amount_minor_units, currency_code, occurred_at_epoch_millis, time_zone_id,
+                     category, account, payment_method, merchant, confidence, review_status,
+                     created_at_epoch_millis, updated_at_epoch_millis)
+                VALUES
+                    ('e1', 'c1', 5000, 'THB', 1000, 'Asia/Bangkok',
+                     'Coffee', NULL, NULL, 'Coffee shop', 1.0, 'APPROVED', 1000, 1000)
+                """.trimIndent()
+            )
+            close()
+        }
+
+        val db = helper.runMigrationsAndValidate(testDbName, 5, true, KeptangDatabase.MIGRATION_4_5)
+
+        val cursor = db.query("SELECT notes FROM expenses WHERE id = 'e1'")
+        assertTrue(cursor.moveToFirst())
+        assertTrue("existing rows should default notes to NULL", cursor.isNull(cursor.getColumnIndexOrThrow("notes")))
         cursor.close()
 
         db.close()

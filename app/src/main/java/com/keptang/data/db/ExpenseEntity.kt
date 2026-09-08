@@ -29,6 +29,7 @@ data class ExpenseEntity(
     @ColumnInfo(name = "account") val account: String?,
     @ColumnInfo(name = "payment_method") val paymentMethod: String?,
     @ColumnInfo(name = "merchant") val merchant: String?,
+    @ColumnInfo(name = "notes") val notes: String? = null,
     @ColumnInfo(name = "confidence") val confidence: Float,
     @ColumnInfo(name = "review_status") val reviewStatus: ReviewStatus,
     @ColumnInfo(name = "created_at_epoch_millis") val createdAtEpochMillis: Long,
