@@ -33,6 +33,14 @@
             </intent-filter>
         </activity>
 
+        <activity
+            android:name=".ui.quickadd.QuickAddActivity"
+            android:exported="true"
+            android:theme="@style/Theme.Keptang.Transparent"
+            android:excludeFromRecents="true"
+            android:launchMode="singleInstance"
+            android:windowSoftInputMode="adjustResize" />
+
         <service
             android:name=".capture.VoiceCaptureService"
             android:exported="false"
@@ -51,6 +59,18 @@
         </receiver>
 
         <receiver
+            android:name=".widget.QuickAddWidgetProvider"
+            android:exported="true"
+            android:label="@string/quick_add_widget_label">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/quick_add_widget_info" />
+        </receiver>
+
+        <receiver
             android:name=".notification.NotificationActionReceiver"
             android:exported="false">
             <intent-filter>
@@ -59,6 +79,16 @@
                 <action android:name="com.keptang.action.CANCEL_RECORDING" />
             </intent-filter>
         </receiver>
+
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="com.keptang.fileprovider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/file_paths" />
+        </provider>
 
     </application>
 

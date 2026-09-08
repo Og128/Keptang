@@ -1,6 +1,9 @@
 package com.keptang.data.repository
 
+import androidx.room.withTransaction
 import com.keptang.data.db.BudgetPeriodType
+import com.keptang.data.db.ExpenseDao
+import com.keptang.data.db.KeptangDatabase
 import com.keptang.data.db.RecurringExpenseDao
 import com.keptang.data.db.RecurringExpenseEntity
 import com.keptang.recurring.RecurringPeriodCalculator
@@ -10,7 +13,11 @@ import java.time.LocalDate
 import java.time.ZoneId
 import java.util.UUID
 
-class RecurringExpenseRepository(private val recurringExpenseDao: RecurringExpenseDao) {
+class RecurringExpenseRepository(
+    private val database: KeptangDatabase,
+    private val recurringExpenseDao: RecurringExpenseDao,
+    private val expenseDao: ExpenseDao
+) {
 
     fun observeAll(): Flow<List<RecurringExpenseEntity>> = recurringExpenseDao.observeAll()
 
@@ -68,7 +75,11 @@ class RecurringExpenseRepository(private val recurringExpenseDao: RecurringExpen
         )
     }
 
-    suspend fun delete(id: String) = recurringExpenseDao.deleteById(id)
+    /** Un-links any expenses this recurrence already generated before deleting it, so they never keep a dangling [RecurringExpenseEntity.id]. */
+    suspend fun delete(id: String) = database.withTransaction {
+        expenseDao.clearRecurringLink(id)
+        recurringExpenseDao.deleteById(id)
+    }
 
     suspend fun getDue(nowEpochMillis: Long): List<RecurringExpenseEntity> = recurringExpenseDao.getDue(nowEpochMillis)
 

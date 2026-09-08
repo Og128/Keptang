@@ -12,6 +12,7 @@ import com.keptang.data.repository.CategoryRepository
 import com.keptang.data.repository.ExpenseRepository
 import com.keptang.data.repository.RecurringExpenseRepository
 import com.keptang.data.repository.SettingsRepository
+import com.keptang.data.repository.TagRepository
 import com.keptang.di.ServiceLocator
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -22,7 +23,8 @@ class ExpensesViewModel(
     expenseRepository: ExpenseRepository,
     categoryRepository: CategoryRepository,
     settingsRepository: SettingsRepository,
-    recurringExpenseRepository: RecurringExpenseRepository
+    recurringExpenseRepository: RecurringExpenseRepository,
+    tagRepository: TagRepository
 ) : ViewModel() {
 
     val expenses: StateFlow<List<ExpenseEntity>> = expenseRepository.observeApproved()
@@ -42,6 +44,14 @@ class ExpensesViewModel(
         .map { it.timeZoneId }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), Defaults.TIME_ZONE_ID)
 
+    /** Every tag name ever used, for the filter row. */
+    val allTagNames: StateFlow<List<String>> = tagRepository.observeAllNames()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    /** Expense id -> its tags, for filtering the ledger by tag. */
+    val tagsByExpenseId: StateFlow<Map<String, List<String>>> = tagRepository.observeTagsByExpenseId()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyMap())
+
     companion object {
         val Factory = viewModelFactory {
             initializer {
@@ -49,7 +59,8 @@ class ExpensesViewModel(
                     ServiceLocator.expenseRepository,
                     ServiceLocator.categoryRepository,
                     ServiceLocator.settingsRepository,
-                    ServiceLocator.recurringExpenseRepository
+                    ServiceLocator.recurringExpenseRepository,
+                    ServiceLocator.tagRepository
                 )
             }
         }

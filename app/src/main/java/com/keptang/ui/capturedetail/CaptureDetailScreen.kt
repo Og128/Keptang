@@ -20,6 +20,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -42,6 +43,12 @@ fun CaptureDetailScreen(
     viewModel: CaptureDetailViewModel = viewModel(factory = CaptureDetailViewModel.factory(captureId))
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
+
+    if (state.isLoaded && state.capture == null) {
+        // Deleted from elsewhere (another screen, or auto-cleanup) while this one was open - leave instead of showing a dead blank screen.
+        LaunchedEffect(Unit) { onDeleted() }
+        return
+    }
     val capture = state.capture ?: return
     val hasExpenses = state.expenses.isNotEmpty()
 

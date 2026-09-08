@@ -20,10 +20,13 @@ import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.ExpandLess
 import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.KeyboardArrowDown
@@ -31,6 +34,7 @@ import androidx.compose.material.icons.filled.Receipt
 import androidx.compose.material.icons.filled.Repeat
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.DropdownMenu
@@ -39,6 +43,8 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.InputChip
 import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
@@ -61,6 +67,7 @@ import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
@@ -100,6 +107,7 @@ fun ManualExpenseScreen(
     val categories by viewModel.categories.collectAsStateWithLifecycle()
     val existingExpense by viewModel.existingExpense.collectAsStateWithLifecycle()
     val isFromVoiceCapture by viewModel.isFromVoiceCapture.collectAsStateWithLifecycle()
+    val existingTags by viewModel.existingTags.collectAsStateWithLifecycle()
     val isEditMode = expenseId != null
 
     var amountText by remember { mutableStateOf("") }
@@ -115,6 +123,17 @@ fun ManualExpenseScreen(
     var showMoreInfo by remember { mutableStateOf(false) }
     var prefilled by remember { mutableStateOf(false) }
     var showEditWarning by remember { mutableStateOf(false) }
+    var showDeleteConfirm by remember { mutableStateOf(false) }
+    var tags by remember { mutableStateOf<List<String>>(emptyList()) }
+    var tagInput by remember { mutableStateOf("") }
+    var tagsPrefilled by remember { mutableStateOf(false) }
+
+    LaunchedEffect(existingTags) {
+        if (!tagsPrefilled && (existingTags.isNotEmpty() || existingExpense != null)) {
+            tags = existingTags
+            tagsPrefilled = true
+        }
+    }
 
     var isRecurringMode by remember { mutableStateOf(false) }
     var recurringName by remember { mutableStateOf("") }
@@ -158,6 +177,7 @@ fun ManualExpenseScreen(
             notes = notes,
             timeZoneId = settings.timeZoneId,
             occurredAtEpochMillis = occurredAtEpochMillis,
+            tags = tags,
             onSaved = onSaved
         )
     }
@@ -337,6 +357,24 @@ fun ManualExpenseScreen(
                     modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp)
                 )
 
+                Text(
+                    stringResource(R.string.manual_add_tags),
+                    style = MaterialTheme.typography.titleSmall,
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp).padding(top = 16.dp)
+                )
+                TagInput(
+                    tags = tags,
+                    tagInput = tagInput,
+                    onTagInputChange = { tagInput = it },
+                    onAddTag = {
+                        val trimmed = tagInput.trim()
+                        if (trimmed.isNotBlank() && trimmed !in tags) tags = tags + trimmed
+                        tagInput = ""
+                    },
+                    onRemoveTag = { tag -> tags = tags - tag },
+                    modifier = Modifier.padding(horizontal = 16.dp)
+                )
+
                 Row(
                     Modifier
                         .fillMaxWidth()
@@ -364,6 +402,16 @@ fun ManualExpenseScreen(
                         FormRow(label = stringResource(R.string.manual_add_payment_method), isLast = true) {
                             InlineValueField(value = paymentMethod, onValueChange = { paymentMethod = it }, modifier = Modifier.weight(1f))
                         }
+                    }
+                }
+
+                if (isEditMode) {
+                    OutlinedButton(
+                        onClick = { showDeleteConfirm = true },
+                        colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.error),
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 20.dp)
+                    ) {
+                        Text(stringResource(R.string.manual_delete_expense_button))
                     }
                 }
             }
@@ -404,6 +452,26 @@ fun ManualExpenseScreen(
             },
             dismissButton = {
                 OutlinedButton(onClick = { showEditWarning = false }) { Text(stringResource(R.string.action_cancel)) }
+            }
+        )
+    }
+
+    if (showDeleteConfirm) {
+        AlertDialog(
+            onDismissRequest = { showDeleteConfirm = false },
+            title = { Text(stringResource(R.string.manual_delete_expense_confirm_title)) },
+            text = { Text(stringResource(R.string.manual_delete_expense_confirm_message)) },
+            confirmButton = {
+                Button(
+                    onClick = { showDeleteConfirm = false; viewModel.delete(onSaved) },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.error,
+                        contentColor = MaterialTheme.colorScheme.onError
+                    )
+                ) { Text(stringResource(R.string.action_delete)) }
+            },
+            dismissButton = {
+                OutlinedButton(onClick = { showDeleteConfirm = false }) { Text(stringResource(R.string.action_cancel)) }
             }
         )
     }
@@ -497,6 +565,55 @@ private fun RecurringInlineForm(
                     selected = weeklyAnchor == isoDayOfWeek,
                     onClick = { onWeeklyAnchorChange(isoDayOfWeek) }
                 )
+            }
+        }
+    }
+}
+
+/** Free-form tags entered one at a time - Enter or the trailing add button commits the current text as a removable chip. */
+@Composable
+private fun TagInput(
+    tags: List<String>,
+    tagInput: String,
+    onTagInputChange: (String) -> Unit,
+    onAddTag: () -> Unit,
+    onRemoveTag: (String) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Column(modifier) {
+        if (tags.isNotEmpty()) {
+            Row(
+                Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).padding(bottom = 8.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                tags.forEach { tag ->
+                    InputChip(
+                        selected = false,
+                        onClick = {},
+                        label = { Text(tag) },
+                        trailingIcon = {
+                            Icon(
+                                Icons.Filled.Close,
+                                contentDescription = stringResource(R.string.action_delete),
+                                modifier = Modifier.size(16.dp).clickable { onRemoveTag(tag) }
+                            )
+                        }
+                    )
+                }
+            }
+        }
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            OutlinedTextField(
+                value = tagInput,
+                onValueChange = onTagInputChange,
+                placeholder = { Text(stringResource(R.string.manual_add_tags_placeholder)) },
+                singleLine = true,
+                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+                keyboardActions = KeyboardActions(onDone = { onAddTag() }),
+                modifier = Modifier.weight(1f)
+            )
+            IconButton(onClick = onAddTag, enabled = tagInput.isNotBlank()) {
+                Icon(Icons.Filled.Add, contentDescription = stringResource(R.string.action_save))
             }
         }
     }

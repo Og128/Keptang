@@ -50,6 +50,7 @@ fun CategoryEditScreen(
     viewModel: CategoryEditViewModel = viewModel(factory = CategoryEditViewModel.factory(categoryName))
 ) {
     val existing by viewModel.existing.collectAsStateWithLifecycle()
+    val deleteBlockedMessage by viewModel.deleteBlockedMessage.collectAsStateWithLifecycle()
     val isEditMode = categoryName != null
 
     var name by remember { mutableStateOf("") }
@@ -114,6 +115,15 @@ fun CategoryEditScreen(
                     onClick = { iconKey = key }
                 )
             }
+        }
+
+        if (deleteBlockedMessage != null) {
+            Text(
+                stringResource(R.string.categories_delete_blocked),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.error,
+                modifier = Modifier.padding(top = 16.dp)
+            )
         }
 
         Row(

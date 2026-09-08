@@ -9,8 +9,11 @@ import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
 
 @Database(
-    entities = [CaptureEntity::class, ExpenseEntity::class, BudgetEntity::class, CategoryEntity::class, RecurringExpenseEntity::class],
-    version = 7,
+    entities = [
+        CaptureEntity::class, ExpenseEntity::class, BudgetEntity::class, CategoryEntity::class,
+        RecurringExpenseEntity::class, TagEntity::class, ExpenseTagCrossRef::class
+    ],
+    version = 9,
     exportSchema = true
 )
 @TypeConverters(Converters::class)
@@ -21,6 +24,7 @@ abstract class KeptangDatabase : RoomDatabase() {
     abstract fun budgetDao(): BudgetDao
     abstract fun categoryDao(): CategoryDao
     abstract fun recurringExpenseDao(): RecurringExpenseDao
+    abstract fun tagDao(): TagDao
 
     companion object {
         val MIGRATION_1_2 = object : Migration(1, 2) {
@@ -113,6 +117,42 @@ abstract class KeptangDatabase : RoomDatabase() {
             }
         }
 
+        /** Adds indices on the columns most frequently filtered on (category rename cascades, review queues), which had none before. */
+        val MIGRATION_7_8 = object : Migration(7, 8) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_expenses_category` ON `expenses` (`category`)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_expenses_review_status` ON `expenses` (`review_status`)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_recurring_expenses_category` ON `recurring_expenses` (`category`)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_budgets_category` ON `budgets` (`category`)")
+            }
+        }
+
+        /** Adds free-form tags: a [TagEntity] name table plus the [ExpenseTagCrossRef] many-to-many join to expenses. */
+        val MIGRATION_8_9 = object : Migration(8, 9) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS `tags` (
+                        `name` TEXT NOT NULL,
+                        PRIMARY KEY(`name`)
+                    )
+                    """.trimIndent()
+                )
+                db.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS `expense_tags` (
+                        `expense_id` TEXT NOT NULL,
+                        `tag` TEXT NOT NULL,
+                        PRIMARY KEY(`expense_id`, `tag`),
+                        FOREIGN KEY(`expense_id`) REFERENCES `expenses`(`id`) ON DELETE CASCADE
+                    )
+                    """.trimIndent()
+                )
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_expense_tags_expense_id` ON `expense_tags` (`expense_id`)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_expense_tags_tag` ON `expense_tags` (`tag`)")
+            }
+        }
+
         /**
          * Seeds the same six default categories as [MIGRATION_2_3], for a brand-new install:
          * migrations only run when upgrading an *existing* database file, so a fresh install
@@ -153,7 +193,7 @@ abstract class KeptangDatabase : RoomDatabase() {
                     KeptangDatabase::class.java,
                     "keptang.db"
                 )
-                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7)
+                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9)
                     .addCallback(SEED_CATEGORIES_CALLBACK)
                     .build().also { instance = it }
             }

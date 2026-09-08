@@ -12,6 +12,7 @@ import com.keptang.data.repository.CategoryRepository
 import com.keptang.data.repository.ExpenseRepository
 import com.keptang.data.repository.RecurringExpenseRepository
 import com.keptang.data.repository.SettingsRepository
+import com.keptang.data.repository.TagRepository
 import com.keptang.notification.NotificationHelper
 import com.keptang.parser.ExpenseParser
 import com.keptang.recurring.RecurringExpenseGenerator
@@ -65,7 +66,7 @@ object ServiceLocator {
     val budgetRepository: BudgetRepository by lazy { BudgetRepository(database.budgetDao()) }
 
     val categoryRepository: CategoryRepository by lazy {
-        CategoryRepository(database.categoryDao(), database.expenseDao(), database.budgetDao(), database.recurringExpenseDao())
+        CategoryRepository(database, database.categoryDao(), database.expenseDao(), database.budgetDao(), database.recurringExpenseDao())
     }
 
     val captureRepository: CaptureRepository by lazy {
@@ -73,11 +74,13 @@ object ServiceLocator {
     }
 
     val recurringExpenseRepository: RecurringExpenseRepository by lazy {
-        RecurringExpenseRepository(database.recurringExpenseDao())
+        RecurringExpenseRepository(database, database.recurringExpenseDao(), database.expenseDao())
     }
 
+    val tagRepository: TagRepository by lazy { TagRepository(database.tagDao()) }
+
     val recurringExpenseGenerator: RecurringExpenseGenerator by lazy {
-        RecurringExpenseGenerator(recurringExpenseRepository, captureRepository, expenseRepository)
+        RecurringExpenseGenerator(database, recurringExpenseRepository, captureRepository, expenseRepository)
     }
 
     /**

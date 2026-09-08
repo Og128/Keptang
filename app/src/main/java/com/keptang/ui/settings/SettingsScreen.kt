@@ -3,6 +3,7 @@ package com.keptang.ui.settings
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -38,6 +39,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
@@ -61,6 +63,7 @@ fun SettingsScreen(
     val isSeedingDemoData by viewModel.isSeedingDemoData.collectAsStateWithLifecycle()
     val attentionCount by ServiceLocator.attentionCount.collectAsStateWithLifecycle()
     var profileName by remember(settings.profileName) { mutableStateOf(settings.profileName) }
+    val context = LocalContext.current
 
     Column(Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(16.dp)) {
         Image(
@@ -105,7 +108,10 @@ fun SettingsScreen(
 
         SettingsSection(stringResource(R.string.settings_section_appearance), modifier = Modifier.padding(top = 16.dp)) {
             Text(stringResource(R.string.settings_color_theme_label), style = MaterialTheme.typography.bodyMedium)
-            Row(Modifier.fillMaxWidth().padding(top = 8.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Row(
+                Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).padding(top = 8.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
                 FilterChip(
                     selected = settings.colorTheme == ColorTheme.DEFAULT,
                     onClick = { viewModel.setColorTheme(ColorTheme.DEFAULT) },
@@ -120,6 +126,11 @@ fun SettingsScreen(
                     selected = settings.colorTheme == ColorTheme.LIGHT,
                     onClick = { viewModel.setColorTheme(ColorTheme.LIGHT) },
                     label = { Text(stringResource(R.string.settings_color_theme_light)) }
+                )
+                FilterChip(
+                    selected = settings.colorTheme == ColorTheme.AMOLED,
+                    onClick = { viewModel.setColorTheme(ColorTheme.AMOLED) },
+                    label = { Text(stringResource(R.string.settings_color_theme_amoled)) }
                 )
             }
 
@@ -177,6 +188,12 @@ fun SettingsScreen(
                 OutlinedButton(onClick = onEditCategories) {
                     Text(stringResource(R.string.settings_edit_categories_button))
                 }
+            }
+        }
+
+        SettingsSection(stringResource(R.string.settings_section_data), modifier = Modifier.padding(top = 16.dp)) {
+            OutlinedButton(onClick = { viewModel.exportExpenses(context) { intent -> context.startActivity(intent) } }) {
+                Text(stringResource(R.string.settings_export_csv_button))
             }
         }
 

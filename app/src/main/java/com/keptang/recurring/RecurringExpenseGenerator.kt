@@ -1,5 +1,7 @@
 package com.keptang.recurring
 
+import androidx.room.withTransaction
+import com.keptang.data.db.KeptangDatabase
 import com.keptang.data.db.RecurringExpenseEntity
 import com.keptang.data.repository.CaptureRepository
 import com.keptang.data.repository.ExpenseRepository
@@ -17,6 +19,7 @@ import java.time.ZoneId
  * the ledger.
  */
 class RecurringExpenseGenerator(
+    private val database: KeptangDatabase,
     private val recurringExpenseRepository: RecurringExpenseRepository,
     private val captureRepository: CaptureRepository,
     private val expenseRepository: ExpenseRepository
@@ -33,8 +36,12 @@ class RecurringExpenseGenerator(
             var latest: RecurringExpenseEntity = recurring
 
             while (!dueDate.atStartOfDay(zone).toInstant().toEpochMilli().let { it > now } && occurrences < MAX_CATCH_UP_OCCURRENCES) {
-                generateExpense(latest, dueDate, timeZoneId, currencyCode)
-                recurringExpenseRepository.advancePastDueDate(latest, dueDate, timeZoneId)
+                // Both writes happen in one transaction so a process death between them can never
+                // regenerate the same occurrence twice on the next launch.
+                database.withTransaction {
+                    generateExpense(latest, dueDate, timeZoneId, currencyCode)
+                    recurringExpenseRepository.advancePastDueDate(latest, dueDate, timeZoneId)
+                }
                 latest = recurringExpenseRepository.getById(latest.id) ?: break
                 dueDate = Instant.ofEpochMilli(latest.nextDueAtEpochMillis).atZone(zone).toLocalDate()
                 occurrences++

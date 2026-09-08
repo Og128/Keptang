@@ -81,10 +81,13 @@ fun ExpensesScreen(
     val categoriesByName by viewModel.categoriesByName.collectAsStateWithLifecycle()
     val recurringById by viewModel.recurringById.collectAsStateWithLifecycle()
     val timeZoneId by viewModel.timeZoneId.collectAsStateWithLifecycle()
+    val allTagNames by viewModel.allTagNames.collectAsStateWithLifecycle()
+    val tagsByExpenseId by viewModel.tagsByExpenseId.collectAsStateWithLifecycle()
     var viewMode by remember { mutableStateOf(ExpensesViewMode.LIST) }
     var selectedCalendarDate by remember { mutableStateOf<LocalDate?>(null) }
     var displayedMonth by remember { mutableStateOf(YearMonth.now()) }
     var selectedCategory by remember { mutableStateOf<String?>(null) }
+    var selectedTag by remember { mutableStateOf<String?>(null) }
     var searchQuery by remember { mutableStateOf("") }
 
     Column(Modifier.fillMaxSize()) {
@@ -128,9 +131,17 @@ fun ExpensesScreen(
                     selected = selectedCategory,
                     onSelect = { selectedCategory = it }
                 )
+                if (allTagNames.isNotEmpty()) {
+                    TagFilterRow(
+                        tags = allTagNames,
+                        selected = selectedTag,
+                        onSelect = { selectedTag = it }
+                    )
+                }
                 val monthExpenses = searchedExpenses.filter {
                     YearMonth.from(localDateOf(it.occurredAtEpochMillis, it.timeZoneId)) == displayedMonth &&
-                        (selectedCategory == null || it.category == selectedCategory)
+                        (selectedCategory == null || it.category == selectedCategory) &&
+                        (selectedTag == null || selectedTag in tagsByExpenseId[it.id].orEmpty())
                 }
                 when {
                     searchedExpenses.isEmpty() -> EmptyState(stringResource(R.string.expenses_empty))
@@ -256,6 +267,27 @@ private fun CategoryFilterRow(
                 selected = selected == category.name,
                 onClick = { onSelect(if (selected == category.name) null else category.name) },
                 label = { Text(category.name) }
+            )
+        }
+    }
+}
+
+@Composable
+private fun TagFilterRow(
+    tags: List<String>,
+    selected: String?,
+    onSelect: (String?) -> Unit
+) {
+    Row(
+        Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).padding(horizontal = 16.dp, vertical = 4.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        tags.forEach { tag ->
+            FilterChip(
+                selected = selected == tag,
+                onClick = { onSelect(if (selected == tag) null else tag) },
+                leadingIcon = { Icon(Icons.Filled.Sell, contentDescription = null, modifier = Modifier.size(16.dp)) },
+                label = { Text(tag) }
             )
         }
     }

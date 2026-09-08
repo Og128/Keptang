@@ -13,7 +13,12 @@ private val Context.dataStore by preferencesDataStore(name = "keptang_settings")
 
 /** A selectable app-wide color palette, set in Settings. See [com.keptang.ui.theme.KeptangTheme]. */
 enum class ColorTheme {
-    DEFAULT, DARK, LIGHT
+    DEFAULT, DARK, LIGHT, AMOLED
+}
+
+/** One customizable block on the Dashboard. See [com.keptang.ui.dashboard.DashboardScreen]. */
+enum class DashboardCard {
+    SPENDING, BUDGET, RECENT
 }
 
 data class AppSettings(
@@ -24,7 +29,9 @@ data class AppSettings(
     val audioRetentionDays: Int = Defaults.AUDIO_RETENTION_DAYS,
     val languageCode: String = Defaults.LANGUAGE_CODE,
     val colorTheme: ColorTheme = ColorTheme.DEFAULT,
-    val firstRunCompleted: Boolean = false
+    val firstRunCompleted: Boolean = false,
+    /** Visible dashboard cards, in display order. A card absent from this list is hidden. */
+    val dashboardCardOrder: List<DashboardCard> = DashboardCard.entries
 )
 
 class SettingsRepository(private val context: Context) {
@@ -38,6 +45,7 @@ class SettingsRepository(private val context: Context) {
         val LANGUAGE = stringPreferencesKey("language_code")
         val COLOR_THEME = stringPreferencesKey("color_theme")
         val FIRST_RUN = stringPreferencesKey("first_run_completed")
+        val DASHBOARD_CARDS = stringPreferencesKey("dashboard_cards")
     }
 
     val settings: Flow<AppSettings> = context.dataStore.data.map { prefs ->
@@ -50,7 +58,10 @@ class SettingsRepository(private val context: Context) {
             languageCode = prefs[Keys.LANGUAGE] ?: Defaults.LANGUAGE_CODE,
             colorTheme = prefs[Keys.COLOR_THEME]?.let { name -> runCatching { ColorTheme.valueOf(name) }.getOrNull() }
                 ?: ColorTheme.DEFAULT,
-            firstRunCompleted = prefs[Keys.FIRST_RUN] == "true"
+            firstRunCompleted = prefs[Keys.FIRST_RUN] == "true",
+            dashboardCardOrder = prefs[Keys.DASHBOARD_CARDS]?.let { raw ->
+                raw.split(",").mapNotNull { name -> runCatching { DashboardCard.valueOf(name) }.getOrNull() }
+            } ?: DashboardCard.entries
         )
     }
 
@@ -69,4 +80,7 @@ class SettingsRepository(private val context: Context) {
     suspend fun setColorTheme(theme: ColorTheme) = context.dataStore.edit { it[Keys.COLOR_THEME] = theme.name }
 
     suspend fun setFirstRunCompleted() = context.dataStore.edit { it[Keys.FIRST_RUN] = "true" }
+
+    suspend fun setDashboardCardOrder(cards: List<DashboardCard>) =
+        context.dataStore.edit { it[Keys.DASHBOARD_CARDS] = cards.joinToString(",") { card -> card.name } }
 }

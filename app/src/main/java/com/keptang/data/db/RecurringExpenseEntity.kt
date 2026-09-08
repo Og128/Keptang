@@ -2,6 +2,7 @@ package com.keptang.data.db
 
 import androidx.room.ColumnInfo
 import androidx.room.Entity
+import androidx.room.Index
 import androidx.room.PrimaryKey
 
 /**
@@ -10,7 +11,7 @@ import androidx.room.PrimaryKey
  * currency of its own - generated expenses always use the Default Currency at generation time,
  * same as [BudgetEntity] (see ADR-0002).
  */
-@Entity(tableName = "recurring_expenses")
+@Entity(tableName = "recurring_expenses", indices = [Index(value = ["category"], name = "index_recurring_expenses_category")])
 data class RecurringExpenseEntity(
     @PrimaryKey val id: String,
     @ColumnInfo(name = "name") val name: String,

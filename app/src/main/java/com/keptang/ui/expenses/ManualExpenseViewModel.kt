@@ -13,6 +13,7 @@ import com.keptang.data.repository.CategoryRepository
 import com.keptang.data.repository.ExpenseRepository
 import com.keptang.data.repository.RecurringExpenseRepository
 import com.keptang.data.repository.SettingsRepository
+import com.keptang.data.repository.TagRepository
 import com.keptang.di.ServiceLocator
 import com.keptang.recurring.RecurringExpenseGenerator
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -29,6 +30,7 @@ class ManualExpenseViewModel(
     categoryRepository: CategoryRepository,
     private val recurringExpenseRepository: RecurringExpenseRepository,
     private val recurringExpenseGenerator: RecurringExpenseGenerator,
+    private val tagRepository: TagRepository,
     private val expenseId: String?
 ) : ViewModel() {
 
@@ -45,6 +47,9 @@ class ManualExpenseViewModel(
     private val _isFromVoiceCapture = MutableStateFlow(false)
     val isFromVoiceCapture: StateFlow<Boolean> = _isFromVoiceCapture.asStateFlow()
 
+    private val _existingTags = MutableStateFlow<List<String>>(emptyList())
+    val existingTags: StateFlow<List<String>> = _existingTags.asStateFlow()
+
     init {
         if (expenseId != null) {
             viewModelScope.launch {
@@ -53,6 +58,7 @@ class ManualExpenseViewModel(
                 if (expense != null) {
                     val capture = captureRepository.getById(expense.captureId)
                     _isFromVoiceCapture.value = capture != null && !capture.isManual
+                    _existingTags.value = tagRepository.getTagsForExpense(expenseId)
                 }
             }
         }
@@ -73,11 +79,12 @@ class ManualExpenseViewModel(
         notes: String?,
         timeZoneId: String,
         occurredAtEpochMillis: Long,
+        tags: List<String>,
         onSaved: () -> Unit
     ) {
         viewModelScope.launch {
             val existing = _existingExpense.value
-            if (existing != null) {
+            val savedId = if (existing != null) {
                 expenseRepository.update(
                     existing.copy(
                         amountMinorUnits = amountMinorUnits,
@@ -91,9 +98,10 @@ class ManualExpenseViewModel(
                         notes = notes?.takeIf { it.isNotBlank() }
                     )
                 )
+                existing.id
             } else {
                 val captureId = captureRepository.createManualEntry(timeZoneId)
-                expenseRepository.createManual(
+                val created = expenseRepository.createManual(
                     captureId = captureId,
                     amountMinorUnits = amountMinorUnits,
                     currencyCode = currencyCode,
@@ -105,8 +113,19 @@ class ManualExpenseViewModel(
                     merchant = merchant?.takeIf { it.isNotBlank() },
                     notes = notes?.takeIf { it.isNotBlank() }
                 )
+                created.id
             }
+            tagRepository.setTagsForExpense(savedId, tags)
             onSaved()
+        }
+    }
+
+    /** Deletes the expense being edited; its tags are cleaned up automatically via the DB cascade. */
+    fun delete(onDeleted: () -> Unit) {
+        val id = expenseId ?: return
+        viewModelScope.launch {
+            expenseRepository.delete(id)
+            onDeleted()
         }
     }
 
@@ -143,6 +162,7 @@ class ManualExpenseViewModel(
                     ServiceLocator.categoryRepository,
                     ServiceLocator.recurringExpenseRepository,
                     ServiceLocator.recurringExpenseGenerator,
+                    ServiceLocator.tagRepository,
                     expenseId
                 )
             }

@@ -6,13 +6,10 @@ import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
-import android.content.res.Configuration
 import androidx.core.app.NotificationCompat
 import com.keptang.R
 import com.keptang.capture.ProcessOutcome
-import com.keptang.di.ServiceLocator
 import com.keptang.ui.MainActivity
-import java.util.Locale
 
 object NotificationIds {
     const val RECORDING = 1001
@@ -30,20 +27,8 @@ class NotificationHelper(private val context: Context) {
 
     private val manager = requireNotNull(context.getSystemService(NotificationManager::class.java))
 
-    /**
-     * A [Context] wrapped with the currently-selected app language, so notification text (built
-     * outside the Compose tree, unlike everything else) still follows the in-app language toggle
-     * rather than the device's system locale.
-     */
-    private fun localizedContext(): Context {
-        val languageCode = ServiceLocator.currentSettings.value.languageCode
-        val config = Configuration(context.resources.configuration)
-        config.setLocale(Locale.forLanguageTag(languageCode))
-        return context.createConfigurationContext(config)
-    }
-
     fun ensureChannels() {
-        val strings = localizedContext()
+        val strings = context
         val recording = NotificationChannel(
             CHANNEL_RECORDING,
             strings.getString(R.string.notif_channel_recording_name),
@@ -61,7 +46,7 @@ class NotificationHelper(private val context: Context) {
     }
 
     fun buildRecordingNotification(captureId: String): Notification {
-        val strings = localizedContext()
+        val strings = context
         val stopIntent = actionBroadcast(NotificationActions.STOP_RECORDING, captureId, requestCode = 10)
         val cancelIntent = actionBroadcast(NotificationActions.CANCEL_RECORDING, captureId, requestCode = 11)
 
@@ -82,7 +67,7 @@ class NotificationHelper(private val context: Context) {
      * granted microphone access through the app's own onboarding flow.
      */
     fun buildPermissionRequiredNotification(): Notification {
-        val strings = localizedContext()
+        val strings = context
         return NotificationCompat.Builder(context, CHANNEL_RESULTS)
             .setSmallIcon(R.drawable.ic_notification_mic)
             .setContentTitle(strings.getString(R.string.app_name))
@@ -102,7 +87,7 @@ class NotificationHelper(private val context: Context) {
     }
 
     fun notifyResult(captureId: String, outcome: ProcessOutcome) {
-        val strings = localizedContext()
+        val strings = context
         val text = when (outcome) {
             is ProcessOutcome.Processed -> pluralExpensesAdded(strings, outcome.approvedCount)
             is ProcessOutcome.NeedsReview -> when {

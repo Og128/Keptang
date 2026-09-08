@@ -5,6 +5,7 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -26,14 +27,18 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CalendarMonth
+import androidx.compose.material.icons.filled.DragHandle
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Notifications
+import androidx.compose.material.icons.filled.Tune
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Badge
 import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -48,6 +53,9 @@ import androidx.compose.material3.VerticalDivider
 import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
+import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -58,17 +66,22 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.zIndex
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.keptang.R
 import com.keptang.budget.BudgetSnapshot
 import com.keptang.dashboard.DashboardFilter
+import com.keptang.data.repository.DashboardCard
 import com.keptang.ui.common.formatCurrencyExclusionNotice
 import com.keptang.ui.common.formatMoney
 import com.keptang.ui.common.formatPeriodRange
@@ -79,6 +92,7 @@ import java.time.LocalDate
 import java.time.ZoneOffset
 import java.time.format.DateTimeFormatter
 import java.util.Locale
+import kotlin.math.roundToInt
 
 @Composable
 fun DashboardScreen(
@@ -91,12 +105,13 @@ fun DashboardScreen(
     val currentFilter by viewModel.currentFilter.collectAsStateWithLifecycle()
     val categories by viewModel.categories.collectAsStateWithLifecycle()
     val budgetSnapshot by viewModel.budgetSnapshot.collectAsStateWithLifecycle()
-    val reviewCount by viewModel.reviewCount.collectAsStateWithLifecycle()
     val attentionCount by viewModel.attentionCount.collectAsStateWithLifecycle()
     val recentExpenses by viewModel.recentExpenses.collectAsStateWithLifecycle()
     val recurringById by viewModel.recurringById.collectAsStateWithLifecycle()
+    val cardOrder by viewModel.cardOrder.collectAsStateWithLifecycle()
     val categoryColors = categories.associate { it.name to CategoryColors.parse(it.colorHex) }
     val categoriesByName = categories.associateBy { it.name }
+    var customizing by remember { mutableStateOf(false) }
 
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp)) {
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
@@ -107,6 +122,9 @@ fun DashboardScreen(
                 alignment = Alignment.CenterStart,
                 contentScale = ContentScale.Fit
             )
+            IconButton(onClick = { customizing = true }) {
+                Icon(Icons.Filled.Tune, contentDescription = stringResource(R.string.dashboard_customize_action))
+            }
             if (attentionCount > 0) {
                 BadgedBox(badge = { Badge { Text(attentionCount.toString()) } }) {
                     IconButton(onClick = onOpenReview) {
@@ -116,137 +134,249 @@ fun DashboardScreen(
             }
         }
 
-        if (reviewCount > 0) {
-            ReviewCard(reviewCount, onOpenReview)
+        if (attentionCount > 0) {
+            ReviewCard(attentionCount, onOpenReview)
         }
 
-        DashboardSection(modifier = Modifier.padding(top = 20.dp)) {
-            Text(stringResource(R.string.dashboard_spending_label), style = MaterialTheme.typography.titleMedium)
-
-            Row(
-                Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).padding(top = 12.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                SpendingFilterChip(
-                    label = stringResource(R.string.dashboard_filter_today),
-                    selected = currentFilter is DashboardFilter.Today,
-                    onClick = { viewModel.setFilter(DashboardFilter.Today) }
+        cardOrder.forEach { card ->
+            when (card) {
+                DashboardCard.SPENDING -> SpendingCard(
+                    modifier = Modifier.padding(top = 16.dp),
+                    snapshot = snapshot,
+                    currentFilter = currentFilter,
+                    categoryColors = categoryColors,
+                    onSetFilter = viewModel::setFilter
                 )
-                SpendingFilterChip(
-                    label = stringResource(R.string.dashboard_filter_7d),
-                    selected = currentFilter is DashboardFilter.Last7Days,
-                    onClick = { viewModel.setFilter(DashboardFilter.Last7Days) }
-                )
-                SpendingFilterChip(
-                    label = stringResource(R.string.dashboard_filter_30d),
-                    selected = currentFilter is DashboardFilter.Last30Days,
-                    onClick = { viewModel.setFilter(DashboardFilter.Last30Days) }
-                )
-                SpendingFilterChip(
-                    label = stringResource(R.string.dashboard_filter_period),
-                    selected = currentFilter is DashboardFilter.Period,
-                    onClick = {
-                        val today = LocalDate.now()
-                        viewModel.setFilter(DashboardFilter.Period(today.minusDays(6), today))
-                    }
-                )
-            }
-
-            val periodFilter = currentFilter as? DashboardFilter.Period
-            if (periodFilter != null) {
-                PeriodPicker(periodFilter, onChange = viewModel::setFilter)
-            }
-
-            Row(
-                Modifier.fillMaxWidth().padding(top = 20.dp).height(IntrinsicSize.Min),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Column(Modifier.weight(1f)) {
-                    Text(
-                        stringResource(R.string.dashboard_total_label),
-                        style = MaterialTheme.typography.labelLarge,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    Text(
-                        formatMoney(snapshot.totalMinorUnits, snapshot.defaultCurrencyCode),
-                        style = MaterialTheme.typography.headlineMedium,
-                        fontWeight = FontWeight.Bold
-                    )
+                DashboardCard.BUDGET -> DashboardSection(modifier = Modifier.padding(top = 16.dp)) {
+                    Text(stringResource(R.string.dashboard_budget_label), style = MaterialTheme.typography.titleMedium)
+                    BudgetSection(budgetSnapshot = budgetSnapshot, categoryColors = categoryColors, onOpenBudgets = onOpenBudgets)
                 }
-                VerticalDivider(
-                    modifier = Modifier.padding(horizontal = 16.dp).height(36.dp),
-                    color = MaterialTheme.colorScheme.outlineVariant
-                )
-                Column(Modifier.weight(1f), horizontalAlignment = Alignment.End) {
-                    Text(
-                        stringResource(R.string.dashboard_transactions_label),
-                        style = MaterialTheme.typography.labelLarge,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    Text(
-                        snapshot.transactionCount.toString(),
-                        style = MaterialTheme.typography.headlineMedium,
-                        fontWeight = FontWeight.Bold
-                    )
-                }
-            }
-            formatCurrencyExclusionNotice(snapshot.excludedByCurrency)?.let { notice ->
-                Text(notice, style = MaterialTheme.typography.bodySmall, modifier = Modifier.padding(top = 4.dp))
-            }
-
-            if (snapshot.byCategory.isEmpty()) {
-                Text(
-                    stringResource(R.string.dashboard_empty),
-                    style = MaterialTheme.typography.bodyLarge,
-                    modifier = Modifier.padding(top = 20.dp)
-                )
-            } else {
-                val spendingSlices = snapshot.byCategory.map { spend ->
-                    BudgetSlice(spend.category, categoryColors[spend.category] ?: MaterialTheme.colorScheme.outline, spend.spentMinorUnits)
-                }
-                Column(Modifier.fillMaxWidth().padding(top = 12.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-                    SpendingDonut(
-                        slices = spendingSlices,
-                        totalMinorUnits = snapshot.totalMinorUnits,
-                        currencyCode = snapshot.defaultCurrencyCode
-                    )
-                    Column(Modifier.fillMaxWidth().padding(top = 20.dp)) {
-                        spendingSlices.forEach { slice ->
-                            BudgetLegendRow(slice.label, slice.color, slice.amountMinorUnits, snapshot.defaultCurrencyCode)
+                DashboardCard.RECENT -> if (recentExpenses.isNotEmpty()) {
+                    DashboardSection(
+                        modifier = Modifier.padding(top = 16.dp),
+                        contentPadding = PaddingValues(vertical = 16.dp)
+                    ) {
+                        Text(
+                            stringResource(R.string.dashboard_recent_label),
+                            style = MaterialTheme.typography.titleMedium,
+                            modifier = Modifier.padding(horizontal = 16.dp)
+                        )
+                        Column(Modifier.padding(top = 8.dp)) {
+                            recentExpenses.forEach { expense ->
+                                ExpenseCard(
+                                    expense,
+                                    categoriesByName[expense.category],
+                                    recurring = expense.recurringExpenseId?.let { recurringById[it] },
+                                    onClick = { onEditExpense(expense.id) }
+                                )
+                            }
                         }
                     }
                 }
             }
         }
+    }
 
-        DashboardSection(modifier = Modifier.padding(top = 16.dp)) {
-            Text(stringResource(R.string.dashboard_budget_label), style = MaterialTheme.typography.titleMedium)
-            BudgetSection(budgetSnapshot = budgetSnapshot, categoryColors = categoryColors, onOpenBudgets = onOpenBudgets)
+    if (customizing) {
+        DashboardCustomizeDialog(
+            cardOrder = cardOrder,
+            onSave = { viewModel.setCardOrder(it) },
+            onDismiss = { customizing = false }
+        )
+    }
+}
+
+@Composable
+private fun SpendingCard(
+    modifier: Modifier,
+    snapshot: com.keptang.dashboard.DashboardSnapshot,
+    currentFilter: DashboardFilter,
+    categoryColors: Map<String, Color>,
+    onSetFilter: (DashboardFilter) -> Unit
+) {
+    DashboardSection(modifier = modifier) {
+        Text(stringResource(R.string.dashboard_spending_label), style = MaterialTheme.typography.titleMedium)
+
+        Row(
+            Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).padding(top = 12.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            SpendingFilterChip(
+                label = stringResource(R.string.dashboard_filter_today),
+                selected = currentFilter is DashboardFilter.Today,
+                onClick = { onSetFilter(DashboardFilter.Today) }
+            )
+            SpendingFilterChip(
+                label = stringResource(R.string.dashboard_filter_7d),
+                selected = currentFilter is DashboardFilter.Last7Days,
+                onClick = { onSetFilter(DashboardFilter.Last7Days) }
+            )
+            SpendingFilterChip(
+                label = stringResource(R.string.dashboard_filter_30d),
+                selected = currentFilter is DashboardFilter.Last30Days,
+                onClick = { onSetFilter(DashboardFilter.Last30Days) }
+            )
+            SpendingFilterChip(
+                label = stringResource(R.string.dashboard_filter_period),
+                selected = currentFilter is DashboardFilter.Period,
+                onClick = {
+                    val today = LocalDate.now()
+                    onSetFilter(DashboardFilter.Period(today.minusDays(6), today))
+                }
+            )
         }
 
-        if (recentExpenses.isNotEmpty()) {
-            DashboardSection(
-                modifier = Modifier.padding(top = 16.dp),
-                contentPadding = PaddingValues(vertical = 16.dp)
-            ) {
+        val periodFilter = currentFilter as? DashboardFilter.Period
+        if (periodFilter != null) {
+            PeriodPicker(periodFilter, onChange = onSetFilter)
+        }
+
+        Row(
+            Modifier.fillMaxWidth().padding(top = 20.dp).height(IntrinsicSize.Min),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column(Modifier.weight(1f)) {
                 Text(
-                    stringResource(R.string.dashboard_recent_label),
-                    style = MaterialTheme.typography.titleMedium,
-                    modifier = Modifier.padding(horizontal = 16.dp)
+                    stringResource(R.string.dashboard_total_label),
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
-                Column(Modifier.padding(top = 8.dp)) {
-                    recentExpenses.forEach { expense ->
-                        ExpenseCard(
-                            expense,
-                            categoriesByName[expense.category],
-                            recurring = expense.recurringExpenseId?.let { recurringById[it] },
-                            onClick = { onEditExpense(expense.id) }
-                        )
+                Text(
+                    formatMoney(snapshot.totalMinorUnits, snapshot.defaultCurrencyCode),
+                    style = MaterialTheme.typography.headlineMedium,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+            VerticalDivider(
+                modifier = Modifier.padding(horizontal = 16.dp).height(36.dp),
+                color = MaterialTheme.colorScheme.outlineVariant
+            )
+            Column(Modifier.weight(1f), horizontalAlignment = Alignment.End) {
+                Text(
+                    stringResource(R.string.dashboard_transactions_label),
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Text(
+                    snapshot.transactionCount.toString(),
+                    style = MaterialTheme.typography.headlineMedium,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+        }
+        formatCurrencyExclusionNotice(snapshot.excludedByCurrency)?.let { notice ->
+            Text(notice, style = MaterialTheme.typography.bodySmall, modifier = Modifier.padding(top = 4.dp))
+        }
+
+        if (snapshot.byCategory.isEmpty()) {
+            Text(
+                stringResource(R.string.dashboard_empty),
+                style = MaterialTheme.typography.bodyLarge,
+                modifier = Modifier.padding(top = 20.dp)
+            )
+        } else {
+            val spendingSlices = snapshot.byCategory.map { spend ->
+                BudgetSlice(spend.category, categoryColors[spend.category] ?: MaterialTheme.colorScheme.outline, spend.spentMinorUnits)
+            }
+            Column(Modifier.fillMaxWidth().padding(top = 12.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                SpendingDonut(
+                    slices = spendingSlices,
+                    totalMinorUnits = snapshot.totalMinorUnits,
+                    currencyCode = snapshot.defaultCurrencyCode
+                )
+                Column(Modifier.fillMaxWidth().padding(top = 20.dp)) {
+                    spendingSlices.forEach { slice ->
+                        BudgetLegendRow(slice.label, slice.color, slice.amountMinorUnits, snapshot.defaultCurrencyCode)
                     }
                 }
             }
         }
     }
+}
+
+private fun dashboardCardLabel(card: DashboardCard): Int = when (card) {
+    DashboardCard.SPENDING -> R.string.dashboard_spending_label
+    DashboardCard.BUDGET -> R.string.dashboard_budget_label
+    DashboardCard.RECENT -> R.string.dashboard_recent_label
+}
+
+private val CUSTOMIZE_ROW_HEIGHT = 48.dp
+
+/** Long-press a row to drag it by its handle; the checkbox toggles visibility independently of position. */
+@Composable
+private fun DashboardCustomizeDialog(
+    cardOrder: List<DashboardCard>,
+    onSave: (List<DashboardCard>) -> Unit,
+    onDismiss: () -> Unit
+) {
+    val order = remember { mutableStateListOf(*(cardOrder + DashboardCard.entries.filterNot { it in cardOrder }).toTypedArray()) }
+    val checked = remember { mutableStateMapOf(*DashboardCard.entries.map { it to (it in cardOrder) }.toTypedArray()) }
+    var draggingCard by remember { mutableStateOf<DashboardCard?>(null) }
+    var dragOffset by remember { mutableStateOf(0f) }
+    val rowHeightPx = with(LocalDensity.current) { CUSTOMIZE_ROW_HEIGHT.toPx() }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.dashboard_customize_action)) },
+        text = {
+            Column {
+                order.forEach { card ->
+                    key(card) {
+                        val isDragging = draggingCard == card
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(CUSTOMIZE_ROW_HEIGHT)
+                                .zIndex(if (isDragging) 1f else 0f)
+                                .graphicsLayer { translationY = if (isDragging) dragOffset else 0f }
+                                .pointerInput(card) {
+                                    detectDragGesturesAfterLongPress(
+                                        onDragStart = { draggingCard = card; dragOffset = 0f },
+                                        onDragEnd = { draggingCard = null; dragOffset = 0f },
+                                        onDragCancel = { draggingCard = null; dragOffset = 0f },
+                                        onDrag = { change, dragAmount ->
+                                            change.consume()
+                                            dragOffset += dragAmount.y
+                                            val currentIndex = order.indexOf(card)
+                                            val moveBy = (dragOffset / rowHeightPx).roundToInt()
+                                            if (moveBy != 0) {
+                                                val targetIndex = (currentIndex + moveBy).coerceIn(0, order.lastIndex)
+                                                if (targetIndex != currentIndex) {
+                                                    order.add(targetIndex, order.removeAt(currentIndex))
+                                                    dragOffset -= moveBy * rowHeightPx
+                                                }
+                                            }
+                                        }
+                                    )
+                                },
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                Icons.Filled.DragHandle,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                            Text(
+                                stringResource(dashboardCardLabel(card)),
+                                modifier = Modifier.weight(1f).padding(start = 12.dp)
+                            )
+                            Checkbox(
+                                checked = checked[card] == true,
+                                onCheckedChange = { checked[card] = it }
+                            )
+                        }
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = {
+                onSave(order.filter { checked[it] == true })
+                onDismiss()
+            }) { Text(stringResource(R.string.action_save)) }
+        },
+        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_cancel)) } }
+    )
 }
 
 /**
@@ -271,7 +401,7 @@ private fun DashboardSection(
 }
 
 @Composable
-private fun ReviewCard(reviewCount: Int, onOpenReview: () -> Unit) {
+private fun ReviewCard(attentionCount: Int, onOpenReview: () -> Unit) {
     Card(
         modifier = Modifier.fillMaxWidth().padding(top = 16.dp),
         shape = RoundedCornerShape(20.dp),
@@ -286,7 +416,7 @@ private fun ReviewCard(reviewCount: Int, onOpenReview: () -> Unit) {
             ) {
                 Icon(Icons.Filled.Info, contentDescription = null, tint = MaterialTheme.colorScheme.onErrorContainer)
                 Text(
-                    stringResource(R.string.dashboard_review_count, reviewCount),
+                    stringResource(R.string.dashboard_review_count, attentionCount),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onErrorContainer,
                     modifier = Modifier.weight(1f).padding(horizontal = 12.dp)

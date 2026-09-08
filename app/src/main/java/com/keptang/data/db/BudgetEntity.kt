@@ -2,6 +2,7 @@ package com.keptang.data.db
 
 import androidx.room.ColumnInfo
 import androidx.room.Entity
+import androidx.room.Index
 import androidx.room.PrimaryKey
 
 /**
@@ -9,7 +10,7 @@ import androidx.room.PrimaryKey
  * against the live Default Currency setting at read time - deliberately has no currency of its
  * own (see ADR-0002).
  */
-@Entity(tableName = "budgets")
+@Entity(tableName = "budgets", indices = [Index(value = ["category"], name = "index_budgets_category")])
 data class BudgetEntity(
     @PrimaryKey val id: String,
     @ColumnInfo(name = "category") val category: String?,

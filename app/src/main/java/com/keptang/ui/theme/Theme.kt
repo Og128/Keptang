@@ -36,6 +36,21 @@ private val ClairColors = lightColorScheme(
     onSecondaryContainer = Color(0xFF5C1B0F)
 )
 
+// "AMOLED" - same violet/amber accents as "Dark", but background/surface pushed to pure black
+// to actually save power on OLED screens (a dark-gray Material surface doesn't).
+private val AmoledColors = SombreColors.copy(
+    background = Color(0xFF000000),
+    onBackground = Color(0xFFE6E1E5),
+    surface = Color(0xFF000000),
+    onSurface = Color(0xFFE6E1E5),
+    surfaceVariant = Color(0xFF121212),
+    surfaceContainer = Color(0xFF0A0A0A),
+    surfaceContainerHigh = Color(0xFF121212),
+    surfaceContainerHighest = Color(0xFF1A1A1A),
+    surfaceContainerLow = Color(0xFF050505),
+    surfaceContainerLowest = Color(0xFF000000)
+)
+
 @Composable
 fun KeptangTheme(
     colorTheme: ColorTheme = ColorTheme.DEFAULT,
@@ -46,6 +61,7 @@ fun KeptangTheme(
         ColorTheme.DEFAULT -> if (darkTheme) DefaultDark else DefaultLight
         ColorTheme.DARK -> SombreColors
         ColorTheme.LIGHT -> ClairColors
+        ColorTheme.AMOLED -> AmoledColors
     }
     MaterialTheme(colorScheme = colorScheme, content = content)
 }

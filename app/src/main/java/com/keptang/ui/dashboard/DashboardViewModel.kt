@@ -15,6 +15,7 @@ import com.keptang.data.db.ExpenseEntity
 import com.keptang.data.db.RecurringExpenseEntity
 import com.keptang.data.repository.BudgetRepository
 import com.keptang.data.repository.CategoryRepository
+import com.keptang.data.repository.DashboardCard
 import com.keptang.data.repository.ExpenseRepository
 import com.keptang.data.repository.RecurringExpenseRepository
 import com.keptang.data.repository.SettingsRepository
@@ -26,6 +27,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
 import java.time.LocalDate
 import java.time.ZoneId
 
@@ -33,7 +35,7 @@ private const val RECENT_EXPENSES_LIMIT = 5
 
 class DashboardViewModel(
     expenseRepository: ExpenseRepository,
-    settingsRepository: SettingsRepository,
+    private val settingsRepository: SettingsRepository,
     categoryRepository: CategoryRepository,
     budgetRepository: BudgetRepository,
     recurringExpenseRepository: RecurringExpenseRepository
@@ -46,8 +48,12 @@ class DashboardViewModel(
         filter.value = newFilter
     }
 
+    /** Shared by [snapshot] and [budgetSnapshot] so "approved expenses" is only queried/collected once, not twice per emission. */
+    private val approvedExpenses: StateFlow<List<ExpenseEntity>> = expenseRepository.observeApproved()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
     val snapshot: StateFlow<DashboardSnapshot> = combine(
-        expenseRepository.observeApproved(),
+        approvedExpenses,
         settingsRepository.settings,
         filter
     ) { expenses, settings, currentFilter ->
@@ -68,7 +74,7 @@ class DashboardViewModel(
 
     val budgetSnapshot: StateFlow<BudgetSnapshot> = combine(
         budgetRepository.observeAll(),
-        expenseRepository.observeApproved(),
+        approvedExpenses,
         settingsRepository.settings
     ) { budgets, expenses, settings ->
         BudgetCalculator.compute(
@@ -83,11 +89,11 @@ class DashboardViewModel(
         BudgetSnapshot(null, null, emptyList(), Defaults.CURRENCY_CODE)
     )
 
-    val reviewCount: StateFlow<Int> = expenseRepository.observeNeedsReview()
-        .map { it.size }
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0)
-
-    /** Same shared count the bottom nav badge and Settings' Inbox button use - see [ServiceLocator.attentionCount]. */
+    /**
+     * Captures needing attention (failed or needs-review) - the single number shown by both the
+     * Dashboard bell and the [ReviewCard] banner below it, so the two no longer disagree the way
+     * the bell's old capture-level count and the banner's old expense-level count used to.
+     */
     val attentionCount: StateFlow<Int> = ServiceLocator.attentionCount
 
     val recentExpenses: StateFlow<List<ExpenseEntity>> = expenseRepository.observeRecent(RECENT_EXPENSES_LIMIT)
@@ -96,6 +102,15 @@ class DashboardViewModel(
     val recurringById: StateFlow<Map<String, RecurringExpenseEntity>> = recurringExpenseRepository.observeAll()
         .map { recurring -> recurring.associateBy { it.id } }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyMap())
+
+    /** Visible dashboard cards (Spending/Budget/Recent), in display order - the Review banner is always pinned above these and isn't user-customizable. */
+    val cardOrder: StateFlow<List<DashboardCard>> = settingsRepository.settings
+        .map { it.dashboardCardOrder }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), DashboardCard.entries)
+
+    fun setCardOrder(cards: List<DashboardCard>) {
+        viewModelScope.launch { settingsRepository.setDashboardCardOrder(cards) }
+    }
 
     companion object {
         val Factory = viewModelFactory {

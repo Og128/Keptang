@@ -20,7 +20,9 @@ import kotlinx.coroutines.launch
 data class CaptureDetailState(
     val capture: CaptureEntity? = null,
     val expenses: List<ExpenseEntity> = emptyList(),
-    val isRetrying: Boolean = false
+    val isRetrying: Boolean = false,
+    /** False until the first DB read completes - lets the screen tell "still loading" apart from "this capture no longer exists". */
+    val isLoaded: Boolean = false
 )
 
 class CaptureDetailViewModel(
@@ -37,7 +39,7 @@ class CaptureDetailViewModel(
         ServiceLocator.expenseRepository.observeByCaptureId(captureId),
         isRetrying
     ) { capture, expenses, retrying ->
-        CaptureDetailState(capture = capture, expenses = expenses, isRetrying = retrying)
+        CaptureDetailState(capture = capture, expenses = expenses, isRetrying = retrying, isLoaded = true)
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), CaptureDetailState())
 
     fun retry() {

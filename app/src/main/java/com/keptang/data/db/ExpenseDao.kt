@@ -50,6 +50,14 @@ interface ExpenseDao {
     @Query("UPDATE expenses SET category = :newName WHERE category = :oldName")
     suspend fun renameCategory(oldName: String, newName: String)
 
+    /** Backs the in-use guard in [com.keptang.data.repository.CategoryRepository.delete]. */
+    @Query("SELECT COUNT(*) FROM expenses WHERE category = :category")
+    suspend fun countByCategory(category: String): Int
+
+    /** Un-links expenses from a recurring definition that's about to be deleted, so they don't keep pointing at a dead row. */
+    @Query("UPDATE expenses SET recurring_expense_id = NULL WHERE recurring_expense_id = :recurringId")
+    suspend fun clearRecurringLink(recurringId: String)
+
     /**
      * Replaces every expense derived from [captureId] with [expenses] in one transaction, so
      * retrying a capture's processing never leaves duplicate rows behind.

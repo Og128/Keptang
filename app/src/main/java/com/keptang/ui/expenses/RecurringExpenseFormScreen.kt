@@ -16,6 +16,7 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -42,6 +43,12 @@ fun RecurringExpenseFormScreen(
     val settings by viewModel.settings.collectAsStateWithLifecycle()
     val categories by viewModel.categories.collectAsStateWithLifecycle()
     val existing by viewModel.existing.collectAsStateWithLifecycle()
+    val notFound by viewModel.notFound.collectAsStateWithLifecycle()
+
+    if (notFound) {
+        LaunchedEffect(Unit) { onCancel() }
+        return
+    }
 
     var name by remember(existing) { mutableStateOf(existing?.name ?: "") }
     var amountText by remember(existing) {

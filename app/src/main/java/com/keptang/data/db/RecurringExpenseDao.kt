@@ -32,4 +32,8 @@ interface RecurringExpenseDao {
     /** Cascades a category rename (see [com.keptang.data.repository.CategoryRepository]). */
     @Query("UPDATE recurring_expenses SET category = :newName WHERE category = :oldName")
     suspend fun renameCategory(oldName: String, newName: String)
+
+    /** Backs the in-use guard in [com.keptang.data.repository.CategoryRepository.delete]. */
+    @Query("SELECT COUNT(*) FROM recurring_expenses WHERE category = :category")
+    suspend fun countByCategory(category: String): Int
 }

@@ -1,4 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <style name="Theme.Keptang" parent="android:Theme.Material.Light.NoActionBar" />
+
+    <!-- Used by QuickAddActivity, which draws its own dim scrim + card in Compose rather than
+         relying on a native dialog theme, since the rest of the app is Compose-only. -->
+    <style name="Theme.Keptang.Transparent" parent="android:Theme.Translucent.NoTitleBar">
+        <item name="android:windowIsTranslucent">true</item>
+        <item name="android:windowBackground">@android:color/transparent</item>
+        <item name="android:windowNoTitle">true</item>
+    </style>
 </resources>

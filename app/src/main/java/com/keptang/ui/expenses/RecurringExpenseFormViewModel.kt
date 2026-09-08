@@ -13,8 +13,10 @@ import com.keptang.data.repository.RecurringExpenseRepository
 import com.keptang.data.repository.SettingsRepository
 import com.keptang.di.ServiceLocator
 import com.keptang.recurring.RecurringExpenseGenerator
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
@@ -34,8 +36,16 @@ class RecurringExpenseFormViewModel(
     val categories: StateFlow<List<CategoryEntity>> = categoryRepository.observeAll()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
-    val existing: StateFlow<RecurringExpenseEntity?> = flow { emit(recurringExpenseRepository.getById(recurringId)) }
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
+    private val _notFound = MutableStateFlow(false)
+
+    /** True once loading has finished and turned up no such recurrence (e.g. deleted from another screen while this one was open). */
+    val notFound: StateFlow<Boolean> = _notFound.asStateFlow()
+
+    val existing: StateFlow<RecurringExpenseEntity?> = flow {
+        val result = recurringExpenseRepository.getById(recurringId)
+        if (result == null) _notFound.value = true
+        emit(result)
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
 
     fun save(
         name: String,
