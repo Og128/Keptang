@@ -4,10 +4,12 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
@@ -20,6 +22,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.keptang.BuildConfig
 import com.keptang.R
 
 @Composable
@@ -29,6 +32,7 @@ fun SettingsScreen(
     viewModel: SettingsViewModel = viewModel(factory = SettingsViewModel.Factory)
 ) {
     val settings by viewModel.settings.collectAsStateWithLifecycle()
+    val isSeedingDemoData by viewModel.isSeedingDemoData.collectAsStateWithLifecycle()
 
     Column(Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(16.dp)) {
         Text(stringResource(R.string.settings_title), style = MaterialTheme.typography.headlineSmall)
@@ -94,5 +98,24 @@ fun SettingsScreen(
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
             modifier = Modifier.fillMaxWidth().padding(top = 16.dp)
         )
+
+        if (BuildConfig.DEBUG) {
+            Text(
+                stringResource(R.string.settings_debug_label),
+                style = MaterialTheme.typography.labelLarge,
+                modifier = Modifier.padding(top = 24.dp)
+            )
+            OutlinedButton(
+                onClick = { viewModel.seedDemoData() },
+                enabled = !isSeedingDemoData,
+                modifier = Modifier.padding(top = 8.dp)
+            ) {
+                if (isSeedingDemoData) {
+                    CircularProgressIndicator(modifier = Modifier.size(16.dp))
+                } else {
+                    Text(stringResource(R.string.settings_seed_demo_data_button))
+                }
+            }
+        }
     }
 }
