@@ -9,7 +9,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
-import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -31,6 +30,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.keptang.R
+import com.keptang.ui.common.InfoCard
 import com.keptang.ui.common.captureStatusLabel
 import com.keptang.ui.common.formatDateTime
 import com.keptang.ui.common.formatMoney
@@ -112,7 +112,7 @@ fun CaptureDetailScreen(
         if (hasExpenses) {
             Text(stringResource(R.string.capture_detail_expenses_title), style = MaterialTheme.typography.titleSmall)
             state.expenses.forEach { expense ->
-                Card(Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
+                InfoCard(Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
                     Text(
                         "${formatMoney(expense.amountMinorUnits, expense.currencyCode)} · ${expense.category} · ${expense.reviewStatus}",
                         modifier = Modifier.padding(8.dp)
@@ -124,6 +124,11 @@ fun CaptureDetailScreen(
         Row(Modifier.fillMaxWidth().padding(top = 16.dp), horizontalArrangement = Arrangement.SpaceBetween) {
             OutlinedButton(onClick = { showDeleteConfirm = true }) {
                 Text(stringResource(R.string.action_delete))
+            }
+            if (!isEditing) {
+                OutlinedButton(onClick = { editedTranscript = capture.rawTranscript.orEmpty(); isEditing = true }) {
+                    Text(stringResource(R.string.action_edit))
+                }
             }
             if (capture.status.isRetryable()) {
                 Button(onClick = { viewModel.retry() }, enabled = !state.isRetrying) {

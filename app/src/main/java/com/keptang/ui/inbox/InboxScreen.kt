@@ -13,7 +13,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.Button
-import androidx.compose.material3.Card
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -36,6 +35,8 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.keptang.R
 import com.keptang.data.db.CaptureEntity
+import com.keptang.ui.common.InfoCard
+import com.keptang.ui.common.captureStatusContainerColor
 import com.keptang.ui.common.captureStatusLabel
 import com.keptang.ui.common.formatDateTime
 import com.keptang.ui.review.ReviewScreen
@@ -105,19 +106,19 @@ fun InboxScreen(
                         }
                     }
                 }
-                InboxViewMode.REVIEW -> ReviewScreen()
+                InboxViewMode.REVIEW -> ReviewScreen(onOpenCapture = onOpenCapture)
             }
         }
     }
 }
 
+/** Shared with [com.keptang.ui.review.ReviewScreen], which reuses this exact row for failed and needs-review captures - same tint, same layout, same tap target. */
 @Composable
-private fun CaptureRow(capture: CaptureEntity, onClick: () -> Unit, onDelete: () -> Unit) {
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 6.dp),
-        onClick = onClick
+internal fun CaptureRow(capture: CaptureEntity, onClick: () -> Unit, onDelete: () -> Unit) {
+    InfoCard(
+        modifier = Modifier.fillMaxWidth().padding(vertical = 6.dp),
+        onClick = onClick,
+        containerColor = captureStatusContainerColor(capture.status)
     ) {
         Row(
             modifier = Modifier.fillMaxWidth().padding(12.dp),

@@ -4,12 +4,14 @@ import com.keptang.data.db.BudgetDao
 import com.keptang.data.db.CategoryDao
 import com.keptang.data.db.CategoryEntity
 import com.keptang.data.db.ExpenseDao
+import com.keptang.data.db.RecurringExpenseDao
 import kotlinx.coroutines.flow.Flow
 
 class CategoryRepository(
     private val categoryDao: CategoryDao,
     private val expenseDao: ExpenseDao,
-    private val budgetDao: BudgetDao
+    private val budgetDao: BudgetDao,
+    private val recurringExpenseDao: RecurringExpenseDao
 ) {
 
     fun observeAll(): Flow<List<CategoryEntity>> = categoryDao.observeAll()
@@ -31,6 +33,7 @@ class CategoryRepository(
         if (newName != oldName) {
             expenseDao.renameCategory(oldName, newName)
             budgetDao.renameCategory(oldName, newName)
+            recurringExpenseDao.renameCategory(oldName, newName)
             categoryDao.deleteByName(oldName)
         }
         categoryDao.upsert(current.copy(name = newName, colorHex = colorHex, iconKey = iconKey))

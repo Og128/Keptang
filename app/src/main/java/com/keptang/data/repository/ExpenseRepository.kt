@@ -67,7 +67,8 @@ class ExpenseRepository(private val expenseDao: ExpenseDao) {
         account: String?,
         paymentMethod: String?,
         merchant: String?,
-        notes: String? = null
+        notes: String? = null,
+        recurringExpenseId: String? = null
     ): ExpenseEntity {
         val now = Instant.now().toEpochMilli()
         val entity = ExpenseEntity(
@@ -82,6 +83,7 @@ class ExpenseRepository(private val expenseDao: ExpenseDao) {
             paymentMethod = paymentMethod,
             merchant = merchant,
             notes = notes,
+            recurringExpenseId = recurringExpenseId,
             confidence = 1.0f,
             reviewStatus = ReviewStatus.APPROVED,
             createdAtEpochMillis = now,

@@ -1,14 +1,17 @@
 package com.keptang.ui.budgets
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -17,17 +20,22 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.VerticalDivider
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -49,16 +57,20 @@ fun BudgetsScreen(
     val snapshot by viewModel.snapshot.collectAsStateWithLifecycle()
     val categories by viewModel.categories.collectAsStateWithLifecycle()
     val categoryColors = categories.associate { it.name to CategoryColors.parse(it.colorHex) }
+    val isOverBudget = snapshot.overall?.let { it.spentMinorUnits > it.budget.amountMinorUnits } == true ||
+        snapshot.categories.any { it.spentMinorUnits > it.budget.amountMinorUnits }
 
     Column(Modifier.fillMaxSize()) {
         Row(
             Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Text(
-                stringResource(R.string.nav_budgets),
-                style = MaterialTheme.typography.headlineSmall,
-                modifier = Modifier.weight(1f)
+            Image(
+                painter = painterResource(if (isOverBudget) R.drawable.m_concerned else R.drawable.m_relaxed),
+                contentDescription = stringResource(R.string.nav_budgets),
+                modifier = Modifier.weight(1f).height(56.dp),
+                alignment = Alignment.CenterStart,
+                contentScale = ContentScale.Fit
             )
             IconButton(onClick = onAddBudget) {
                 Icon(Icons.Filled.Add, contentDescription = stringResource(R.string.budget_add_title))
@@ -142,27 +154,44 @@ private fun OverviewCard(overall: BudgetStanding, currencyCode: String) {
 
     Column(Modifier.fillMaxWidth().padding(horizontal = 16.dp).padding(top = 4.dp)) {
         Text(stringResource(R.string.budgets_overview_label), style = MaterialTheme.typography.titleMedium)
-        Card(Modifier.fillMaxWidth().padding(top = 8.dp)) {
+        Card(
+            modifier = Modifier.fillMaxWidth().padding(top = 12.dp),
+            shape = RoundedCornerShape(20.dp),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
+            elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+        ) {
             Column(Modifier.padding(16.dp)) {
-                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                    Column {
+                Row(Modifier.fillMaxWidth().height(IntrinsicSize.Min), verticalAlignment = Alignment.CenterVertically) {
+                    Column(Modifier.weight(1f)) {
                         Text(
                             stringResource(R.string.budgets_current_expenses_label),
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
-                        Text(formatMoney(overall.spentMinorUnits, currencyCode), style = MaterialTheme.typography.titleLarge)
+                        Text(
+                            formatMoney(overall.spentMinorUnits, currencyCode),
+                            style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.Bold
+                        )
                     }
-                    Column(horizontalAlignment = Alignment.End) {
+                    VerticalDivider(
+                        modifier = Modifier.padding(horizontal = 16.dp).height(32.dp),
+                        color = MaterialTheme.colorScheme.outlineVariant
+                    )
+                    Column(Modifier.weight(1f), horizontalAlignment = Alignment.End) {
                         Text(
                             stringResource(R.string.budgets_you_budgeted_label),
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
-                        Text(formatMoney(overall.budget.amountMinorUnits, currencyCode), style = MaterialTheme.typography.titleLarge)
+                        Text(
+                            formatMoney(overall.budget.amountMinorUnits, currencyCode),
+                            style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.Bold
+                        )
                     }
                 }
-                HorizontalDivider(Modifier.padding(vertical = 12.dp))
+                HorizontalDivider(Modifier.padding(vertical = 16.dp), color = MaterialTheme.colorScheme.outlineVariant)
                 Row(
                     Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
@@ -172,6 +201,7 @@ private fun OverviewCard(overall: BudgetStanding, currencyCode: String) {
                     Text(
                         formatSignedMoney(available, currencyCode),
                         style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
                         color = if (available >= 0L) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error
                     )
                 }

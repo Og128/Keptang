@@ -9,8 +9,8 @@ import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
 
 @Database(
-    entities = [CaptureEntity::class, ExpenseEntity::class, BudgetEntity::class, CategoryEntity::class],
-    version = 5,
+    entities = [CaptureEntity::class, ExpenseEntity::class, BudgetEntity::class, CategoryEntity::class, RecurringExpenseEntity::class],
+    version = 7,
     exportSchema = true
 )
 @TypeConverters(Converters::class)
@@ -20,6 +20,7 @@ abstract class KeptangDatabase : RoomDatabase() {
     abstract fun expenseDao(): ExpenseDao
     abstract fun budgetDao(): BudgetDao
     abstract fun categoryDao(): CategoryDao
+    abstract fun recurringExpenseDao(): RecurringExpenseDao
 
     companion object {
         val MIGRATION_1_2 = object : Migration(1, 2) {
@@ -83,6 +84,35 @@ abstract class KeptangDatabase : RoomDatabase() {
             }
         }
 
+        /** Adds the `recurring_expenses` table backing subscriptions (Netflix, rent, etc.) that auto-generate an [ExpenseEntity] each time they come due. */
+        val MIGRATION_5_6 = object : Migration(5, 6) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS `recurring_expenses` (
+                        `id` TEXT NOT NULL,
+                        `name` TEXT NOT NULL,
+                        `amount_minor_units` INTEGER NOT NULL,
+                        `category` TEXT NOT NULL,
+                        `period_type` TEXT NOT NULL,
+                        `period_anchor` INTEGER NOT NULL,
+                        `next_due_at_epoch_millis` INTEGER NOT NULL,
+                        `created_at_epoch_millis` INTEGER NOT NULL,
+                        `updated_at_epoch_millis` INTEGER NOT NULL,
+                        PRIMARY KEY(`id`)
+                    )
+                    """.trimIndent()
+                )
+            }
+        }
+
+        /** Tags an [ExpenseEntity] with the [RecurringExpenseEntity] that generated it, so the ledger can badge it as recurring. */
+        val MIGRATION_6_7 = object : Migration(6, 7) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE `expenses` ADD COLUMN `recurring_expense_id` TEXT")
+            }
+        }
+
         /**
          * Seeds the same six default categories as [MIGRATION_2_3], for a brand-new install:
          * migrations only run when upgrading an *existing* database file, so a fresh install
@@ -123,7 +153,7 @@ abstract class KeptangDatabase : RoomDatabase() {
                     KeptangDatabase::class.java,
                     "keptang.db"
                 )
-                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5)
+                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7)
                     .addCallback(SEED_CATEGORIES_CALLBACK)
                     .build().also { instance = it }
             }

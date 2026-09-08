@@ -12,15 +12,20 @@ import android.os.Vibrator
 import android.os.VibratorManager
 import androidx.core.app.ServiceCompat
 import androidx.core.content.ContextCompat
+import com.keptang.R
 import com.keptang.core.Defaults
 import com.keptang.di.ServiceLocator
 import com.keptang.notification.NotificationIds
 import com.keptang.transcription.TranscriptionResult
+import com.keptang.widget.VoiceCaptureWidgetProvider
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.async
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeoutOrNull
 import java.util.UUID
@@ -38,6 +43,7 @@ class VoiceCaptureService : Service() {
 
     private var activeRecorder: AudioRecorderController? = null
     private var isRecording = false
+    private var widgetAnimationJob: Job? = null
 
     override fun onBind(intent: Intent?): IBinder? = null
 
@@ -79,6 +85,7 @@ class VoiceCaptureService : Service() {
         }
 
         vibrateFeedback()
+        startWidgetAnimation()
 
         val audioFile = ServiceLocator.audioFileStore.newFileFor(captureId)
         val recorder = AudioRecorderController()
@@ -130,8 +137,28 @@ class VoiceCaptureService : Service() {
     private fun finishService() {
         isRecording = false
         activeRecorder = null
+        stopWidgetAnimation()
         ServiceCompat.stopForeground(this, ServiceCompat.STOP_FOREGROUND_REMOVE)
         stopSelf()
+    }
+
+    /** Alternates the widget's mouth-open/mouth-closed frames every 500ms while listening, like a talking mascot. */
+    private fun startWidgetAnimation() {
+        widgetAnimationJob = serviceScope.launch {
+            val frames = listOf(R.drawable.widget_mic_blanc_po, R.drawable.widget_mic_blanc_go)
+            var frameIndex = 0
+            while (isActive) {
+                VoiceCaptureWidgetProvider.updateAllWidgets(applicationContext, frames[frameIndex % frames.size])
+                frameIndex++
+                delay(WIDGET_ANIMATION_FRAME_MILLIS)
+            }
+        }
+    }
+
+    private fun stopWidgetAnimation() {
+        widgetAnimationJob?.cancel()
+        widgetAnimationJob = null
+        VoiceCaptureWidgetProvider.updateAllWidgets(applicationContext, R.drawable.widget_mic_blanc)
     }
 
     private fun vibrateFeedback() {
@@ -156,5 +183,6 @@ class VoiceCaptureService : Service() {
 
         const val MAX_RECORDING_DURATION_MILLIS = 60_000L
         private const val RECOGNITION_GRACE_PERIOD_MILLIS = 8_000L
+        private const val WIDGET_ANIMATION_FRAME_MILLIS = 500L
     }
 }

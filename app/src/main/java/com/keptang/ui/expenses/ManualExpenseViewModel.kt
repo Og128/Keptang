@@ -7,11 +7,14 @@ import androidx.lifecycle.viewmodel.viewModelFactory
 import com.keptang.data.db.CategoryEntity
 import com.keptang.data.db.ExpenseEntity
 import com.keptang.data.repository.AppSettings
+import com.keptang.data.db.BudgetPeriodType
 import com.keptang.data.repository.CaptureRepository
 import com.keptang.data.repository.CategoryRepository
 import com.keptang.data.repository.ExpenseRepository
+import com.keptang.data.repository.RecurringExpenseRepository
 import com.keptang.data.repository.SettingsRepository
 import com.keptang.di.ServiceLocator
+import com.keptang.recurring.RecurringExpenseGenerator
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -24,6 +27,8 @@ class ManualExpenseViewModel(
     private val expenseRepository: ExpenseRepository,
     settingsRepository: SettingsRepository,
     categoryRepository: CategoryRepository,
+    private val recurringExpenseRepository: RecurringExpenseRepository,
+    private val recurringExpenseGenerator: RecurringExpenseGenerator,
     private val expenseId: String?
 ) : ViewModel() {
 
@@ -105,6 +110,29 @@ class ManualExpenseViewModel(
         }
     }
 
+    /**
+     * Creates a recurring definition instead of a one-off expense - used by the add-mode toggle
+     * next to the mascot. Runs the generator immediately after so a recurrence due today or
+     * yesterday shows up in the ledger right away, instead of waiting for the next cold app start
+     * (see [RecurringExpenseGenerator], normally only triggered from [com.keptang.ui.MainActivity]).
+     */
+    fun saveRecurring(
+        name: String,
+        amountMinorUnits: Long,
+        category: String,
+        periodType: BudgetPeriodType,
+        periodAnchor: Int,
+        timeZoneId: String,
+        currencyCode: String,
+        onSaved: () -> Unit
+    ) {
+        viewModelScope.launch {
+            recurringExpenseRepository.create(name, amountMinorUnits, category, periodType, periodAnchor, timeZoneId)
+            recurringExpenseGenerator.generateDueExpenses(timeZoneId, currencyCode)
+            onSaved()
+        }
+    }
+
     companion object {
         fun factory(expenseId: String? = null) = viewModelFactory {
             initializer {
@@ -113,6 +141,8 @@ class ManualExpenseViewModel(
                     ServiceLocator.expenseRepository,
                     ServiceLocator.settingsRepository,
                     ServiceLocator.categoryRepository,
+                    ServiceLocator.recurringExpenseRepository,
+                    ServiceLocator.recurringExpenseGenerator,
                     expenseId
                 )
             }

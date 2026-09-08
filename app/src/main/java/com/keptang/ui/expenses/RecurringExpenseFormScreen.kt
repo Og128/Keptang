@@ -1,4 +1,4 @@
-package com.keptang.ui.budgets
+package com.keptang.ui.expenses
 
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
@@ -27,48 +27,27 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.keptang.R
-import com.keptang.core.Defaults
 import com.keptang.data.db.BudgetPeriodType
+import com.keptang.ui.budgets.weekdayLabelRes
+import com.keptang.ui.common.formatMoneyInput
 import com.keptang.ui.common.parseMoneyInput
-import java.util.Locale
-import kotlin.math.pow
-
-private sealed class TargetSelection {
-    object Overall : TargetSelection()
-    data class Category(val name: String) : TargetSelection()
-}
-
-private fun majorAmountText(amountMinorUnits: Long, currencyCode: String): String {
-    val exponent = Defaults.minorUnitExponent(currencyCode)
-    val major = amountMinorUnits / 10.0.pow(exponent)
-    return if (exponent == 0) major.toLong().toString() else String.format(Locale.US, "%.${exponent}f", major)
-}
-
-private val WEEKDAY_LABELS = listOf(
-    R.string.weekday_mon, R.string.weekday_tue, R.string.weekday_wed,
-    R.string.weekday_thu, R.string.weekday_fri, R.string.weekday_sat,
-    R.string.weekday_sun
-)
-
-/** The abbreviated weekday string resource for an ISO day-of-week (1=Monday..7=Sunday), shared with [com.keptang.ui.expenses.RecurringExpensesScreen]. */
-fun weekdayLabelRes(isoDayOfWeek: Int): Int = WEEKDAY_LABELS[isoDayOfWeek - 1]
 
 @Composable
-fun BudgetFormScreen(
-    budgetId: String?,
+fun RecurringExpenseFormScreen(
+    recurringId: String,
     onSaved: () -> Unit,
     onCancel: () -> Unit,
-    viewModel: BudgetFormViewModel = viewModel(factory = BudgetFormViewModel.factory(budgetId))
+    viewModel: RecurringExpenseFormViewModel = viewModel(factory = RecurringExpenseFormViewModel.factory(recurringId))
 ) {
     val settings by viewModel.settings.collectAsStateWithLifecycle()
+    val categories by viewModel.categories.collectAsStateWithLifecycle()
     val existing by viewModel.existing.collectAsStateWithLifecycle()
-    val availableTargets by viewModel.availableTargets.collectAsStateWithLifecycle()
-    val isEditMode = budgetId != null
 
-    var selectedTarget by remember { mutableStateOf<TargetSelection?>(null) }
+    var name by remember(existing) { mutableStateOf(existing?.name ?: "") }
     var amountText by remember(existing) {
-        mutableStateOf(existing?.let { majorAmountText(it.amountMinorUnits, settings.currencyCode) } ?: "")
+        mutableStateOf(existing?.let { formatMoneyInput(it.amountMinorUnits, settings.currencyCode) } ?: "")
     }
+    var category by remember(existing) { mutableStateOf(existing?.category ?: "") }
     var periodType by remember(existing) { mutableStateOf(existing?.periodType ?: BudgetPeriodType.MONTHLY) }
     var monthlyAnchorText by remember(existing) {
         mutableStateOf(if (existing?.periodType == BudgetPeriodType.MONTHLY) existing?.periodAnchor.toString() else "1")
@@ -80,70 +59,54 @@ fun BudgetFormScreen(
     val amountMinorUnits = parseMoneyInput(amountText, settings.currencyCode)
     val monthlyAnchor = monthlyAnchorText.toIntOrNull()?.takeIf { it in 1..31 }
     val periodAnchor = if (periodType == BudgetPeriodType.MONTHLY) monthlyAnchor else weeklyAnchor
-    val targetValid = isEditMode || selectedTarget != null
+    val canSave = name.isNotBlank() && amountMinorUnits != null && category.isNotBlank() && periodAnchor != null
 
-    Column(
-        Modifier
-            .fillMaxSize()
-            .verticalScroll(rememberScrollState())
-            .padding(16.dp)
-    ) {
-        Text(
-            stringResource(if (isEditMode) R.string.budget_edit_title else R.string.budget_add_title),
-            style = MaterialTheme.typography.titleLarge
-        )
+    Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp)) {
+        Text(stringResource(R.string.recurring_edit_title), style = MaterialTheme.typography.titleLarge)
 
-        Text(
-            stringResource(R.string.budget_form_target_label),
-            style = MaterialTheme.typography.labelLarge,
-            modifier = Modifier.padding(top = 16.dp)
+        OutlinedTextField(
+            value = name,
+            onValueChange = { name = it },
+            label = { Text(stringResource(R.string.recurring_form_name_label)) },
+            modifier = Modifier.fillMaxWidth().padding(top = 16.dp)
         )
-        if (isEditMode) {
-            Text(
-                existing?.category ?: stringResource(R.string.budget_form_target_overall),
-                style = MaterialTheme.typography.bodyLarge,
-                modifier = Modifier.padding(top = 4.dp)
-            )
-        } else {
-            Row(Modifier.horizontalScroll(rememberScrollState()).padding(top = 8.dp)) {
-                if (availableTargets.overallAvailable) {
-                    TargetButton(
-                        label = stringResource(R.string.budget_form_target_overall),
-                        selected = selectedTarget == TargetSelection.Overall,
-                        onClick = { selectedTarget = TargetSelection.Overall }
-                    )
-                }
-                availableTargets.availableCategories.forEach { category ->
-                    TargetButton(
-                        label = category,
-                        selected = selectedTarget == TargetSelection.Category(category),
-                        onClick = { selectedTarget = TargetSelection.Category(category) }
-                    )
-                }
-            }
-        }
 
         OutlinedTextField(
             value = amountText,
             onValueChange = { amountText = it },
-            label = { Text(stringResource(R.string.budget_form_amount_label, settings.currencyCode)) },
+            label = { Text(stringResource(R.string.recurring_form_amount_label, settings.currencyCode)) },
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
             isError = amountText.isNotBlank() && amountMinorUnits == null,
             modifier = Modifier.fillMaxWidth().padding(top = 16.dp)
         )
 
         Text(
-            stringResource(R.string.budget_form_period_type_label),
+            stringResource(R.string.recurring_form_category_label),
+            style = MaterialTheme.typography.labelLarge,
+            modifier = Modifier.padding(top = 16.dp)
+        )
+        Row(Modifier.horizontalScroll(rememberScrollState()).padding(top = 8.dp)) {
+            categories.forEach { entity ->
+                ChoiceButton(
+                    label = entity.name,
+                    selected = category == entity.name,
+                    onClick = { category = entity.name }
+                )
+            }
+        }
+
+        Text(
+            stringResource(R.string.recurring_form_frequency_label),
             style = MaterialTheme.typography.labelLarge,
             modifier = Modifier.padding(top = 16.dp)
         )
         Row(Modifier.fillMaxWidth().padding(top = 8.dp)) {
-            TargetButton(
+            ChoiceButton(
                 label = stringResource(R.string.budget_form_period_monthly),
                 selected = periodType == BudgetPeriodType.MONTHLY,
                 onClick = { periodType = BudgetPeriodType.MONTHLY }
             )
-            TargetButton(
+            ChoiceButton(
                 label = stringResource(R.string.budget_form_period_weekly),
                 selected = periodType == BudgetPeriodType.WEEKLY,
                 onClick = { periodType = BudgetPeriodType.WEEKLY }
@@ -160,16 +123,10 @@ fun BudgetFormScreen(
                 modifier = Modifier.fillMaxWidth().padding(top = 16.dp)
             )
         } else {
-            Text(
-                stringResource(R.string.budget_form_anchor_weekday_label),
-                style = MaterialTheme.typography.labelLarge,
-                modifier = Modifier.padding(top = 16.dp)
-            )
             Row(Modifier.horizontalScroll(rememberScrollState()).padding(top = 8.dp)) {
-                WEEKDAY_LABELS.forEachIndexed { index, labelRes ->
-                    val isoDayOfWeek = index + 1
-                    TargetButton(
-                        label = stringResource(labelRes),
+                (1..7).forEach { isoDayOfWeek ->
+                    ChoiceButton(
+                        label = stringResource(weekdayLabelRes(isoDayOfWeek)),
                         selected = weeklyAnchor == isoDayOfWeek,
                         onClick = { weeklyAnchor = isoDayOfWeek }
                     )
@@ -181,12 +138,8 @@ fun BudgetFormScreen(
             Modifier.fillMaxWidth().padding(top = 24.dp),
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            if (isEditMode) {
-                OutlinedButton(onClick = { viewModel.delete(onSaved) }) {
-                    Text(stringResource(R.string.action_delete))
-                }
-            } else {
-                Row {}
+            OutlinedButton(onClick = { viewModel.delete(onSaved) }) {
+                Text(stringResource(R.string.action_delete))
             }
             Row {
                 OutlinedButton(onClick = onCancel, modifier = Modifier.padding(end = 8.dp)) {
@@ -196,18 +149,9 @@ fun BudgetFormScreen(
                     onClick = {
                         val minorUnits = amountMinorUnits ?: return@Button
                         val anchor = periodAnchor ?: return@Button
-                        val target = if (isEditMode) {
-                            existing?.category
-                        } else {
-                            when (val selection = selectedTarget) {
-                                is TargetSelection.Overall -> null
-                                is TargetSelection.Category -> selection.name
-                                null -> return@Button
-                            }
-                        }
-                        viewModel.save(target, minorUnits, periodType, anchor, onSaved)
+                        viewModel.save(name, minorUnits, category, periodType, anchor, settings.timeZoneId, settings.currencyCode, onSaved)
                     },
-                    enabled = amountMinorUnits != null && periodAnchor != null && targetValid
+                    enabled = canSave
                 ) {
                     Text(stringResource(R.string.action_save))
                 }
@@ -216,8 +160,9 @@ fun BudgetFormScreen(
     }
 }
 
+/** Shared with [ManualExpenseScreen]'s inline recurring-mode form. */
 @Composable
-private fun TargetButton(label: String, selected: Boolean, onClick: () -> Unit) {
+internal fun ChoiceButton(label: String, selected: Boolean, onClick: () -> Unit) {
     if (selected) {
         Button(onClick = {}, enabled = false, modifier = Modifier.padding(end = 8.dp)) { Text(label) }
     } else {

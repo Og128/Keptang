@@ -10,4 +10,4 @@
     android:initialLayout="@layout/widget_voice_capture"
     android:resizeMode="horizontal|vertical"
     android:widgetCategory="home_screen"
-    android:previewImage="@drawable/widget_mic" />
+    android:previewImage="@drawable/widget_mic_blanc" />

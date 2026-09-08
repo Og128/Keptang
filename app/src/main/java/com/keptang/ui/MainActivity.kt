@@ -65,7 +65,7 @@ class MainActivity : ComponentActivity() {
             }
 
             CompositionLocalProvider(LocalContext provides localizedContext) {
-                KeptangTheme {
+                KeptangTheme(colorTheme = settings.colorTheme) {
                     var micGranted by remember { mutableStateOf(hasMicPermission()) }
                     var firstRunCompleted by remember { mutableStateOf<Boolean?>(null) }
 
@@ -74,7 +74,12 @@ class MainActivity : ComponentActivity() {
                     ) { results -> micGranted = results[Manifest.permission.RECORD_AUDIO] == true }
 
                     LaunchedEffect(Unit) {
-                        firstRunCompleted = ServiceLocator.settingsRepository.settings.first().firstRunCompleted
+                        val currentSettings = ServiceLocator.settingsRepository.settings.first()
+                        firstRunCompleted = currentSettings.firstRunCompleted
+                        ServiceLocator.recurringExpenseGenerator.generateDueExpenses(
+                            timeZoneId = currentSettings.timeZoneId,
+                            currencyCode = currentSettings.currencyCode
+                        )
                     }
 
                     when (firstRunCompleted) {

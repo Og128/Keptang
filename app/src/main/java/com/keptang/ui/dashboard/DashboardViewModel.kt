@@ -12,9 +12,11 @@ import com.keptang.dashboard.DashboardFilter
 import com.keptang.dashboard.DashboardSnapshot
 import com.keptang.data.db.CategoryEntity
 import com.keptang.data.db.ExpenseEntity
+import com.keptang.data.db.RecurringExpenseEntity
 import com.keptang.data.repository.BudgetRepository
 import com.keptang.data.repository.CategoryRepository
 import com.keptang.data.repository.ExpenseRepository
+import com.keptang.data.repository.RecurringExpenseRepository
 import com.keptang.data.repository.SettingsRepository
 import com.keptang.di.ServiceLocator
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -33,7 +35,8 @@ class DashboardViewModel(
     expenseRepository: ExpenseRepository,
     settingsRepository: SettingsRepository,
     categoryRepository: CategoryRepository,
-    budgetRepository: BudgetRepository
+    budgetRepository: BudgetRepository,
+    recurringExpenseRepository: RecurringExpenseRepository
 ) : ViewModel() {
 
     private val filter = MutableStateFlow<DashboardFilter>(DashboardFilter.Today)
@@ -84,8 +87,15 @@ class DashboardViewModel(
         .map { it.size }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0)
 
+    /** Same shared count the bottom nav badge and Settings' Inbox button use - see [ServiceLocator.attentionCount]. */
+    val attentionCount: StateFlow<Int> = ServiceLocator.attentionCount
+
     val recentExpenses: StateFlow<List<ExpenseEntity>> = expenseRepository.observeRecent(RECENT_EXPENSES_LIMIT)
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    val recurringById: StateFlow<Map<String, RecurringExpenseEntity>> = recurringExpenseRepository.observeAll()
+        .map { recurring -> recurring.associateBy { it.id } }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyMap())
 
     companion object {
         val Factory = viewModelFactory {
@@ -94,7 +104,8 @@ class DashboardViewModel(
                     ServiceLocator.expenseRepository,
                     ServiceLocator.settingsRepository,
                     ServiceLocator.categoryRepository,
-                    ServiceLocator.budgetRepository
+                    ServiceLocator.budgetRepository,
+                    ServiceLocator.recurringExpenseRepository
                 )
             }
         }

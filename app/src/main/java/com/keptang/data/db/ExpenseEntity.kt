@@ -30,6 +30,7 @@ data class ExpenseEntity(
     @ColumnInfo(name = "payment_method") val paymentMethod: String?,
     @ColumnInfo(name = "merchant") val merchant: String?,
     @ColumnInfo(name = "notes") val notes: String? = null,
+    @ColumnInfo(name = "recurring_expense_id") val recurringExpenseId: String? = null,
     @ColumnInfo(name = "confidence") val confidence: Float,
     @ColumnInfo(name = "review_status") val reviewStatus: ReviewStatus,
     @ColumnInfo(name = "created_at_epoch_millis") val createdAtEpochMillis: Long,

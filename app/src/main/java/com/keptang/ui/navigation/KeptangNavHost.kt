@@ -30,6 +30,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
@@ -47,6 +48,7 @@ import com.keptang.ui.categories.CategoryEditScreen
 import com.keptang.ui.dashboard.DashboardScreen
 import com.keptang.ui.expenses.ExpensesScreen
 import com.keptang.ui.expenses.ManualExpenseScreen
+import com.keptang.ui.expenses.RecurringExpenseFormScreen
 import com.keptang.ui.inbox.InboxScreen
 import com.keptang.ui.settings.SettingsScreen
 
@@ -64,6 +66,7 @@ object Routes {
     const val CATEGORIES = "categories"
     const val CATEGORY_ADD = "category_add"
     const val CATEGORY_EDIT = "category_edit/{categoryName}"
+    const val RECURRING_EDIT = "recurring_edit/{recurringId}"
 
     fun inbox(showReview: Boolean = false) = if (showReview) "inbox?tab=review" else "inbox"
     fun captureDetail(captureId: String) = "capture/$captureId"
@@ -71,6 +74,7 @@ object Routes {
     fun expenseEdit(expenseId: String) = "expense_edit/$expenseId"
     fun budgetEdit(budgetId: String) = "budget_edit/$budgetId"
     fun categoryEdit(categoryName: String) = "category_edit/${Uri.encode(categoryName)}"
+    fun recurringEdit(recurringId: String) = "recurring_edit/$recurringId"
 }
 
 private data class BottomTab(val route: String, val labelRes: Int, val icon: ImageVector)
@@ -121,7 +125,8 @@ fun KeptangNavHost(navController: NavHostController = rememberNavController(), s
             composable(Routes.EXPENSES) {
                 ExpensesScreen(
                     onAddExpense = { date -> navController.navigate(Routes.addExpense(date)) },
-                    onEditExpense = { id -> navController.navigate(Routes.expenseEdit(id)) }
+                    onEditExpense = { id -> navController.navigate(Routes.expenseEdit(id)) },
+                    onEditRecurring = { id -> navController.navigate(Routes.recurringEdit(id)) }
                 )
             }
             composable(Routes.BUDGETS) {
@@ -204,6 +209,14 @@ fun KeptangNavHost(navController: NavHostController = rememberNavController(), s
                     onCancel = { navController.popBackStack() }
                 )
             }
+            composable(Routes.RECURRING_EDIT) { backStack ->
+                val recurringId = backStack.arguments?.getString("recurringId") ?: return@composable
+                RecurringExpenseFormScreen(
+                    recurringId = recurringId,
+                    onSaved = { navController.popBackStack() },
+                    onCancel = { navController.popBackStack() }
+                )
+            }
         }
     }
 
@@ -219,6 +232,7 @@ fun KeptangNavHost(navController: NavHostController = rememberNavController(), s
 private fun KeptangBottomBar(currentRoute: String?, onNavigate: (String) -> Unit, onAddExpense: () -> Unit) {
     val leftTabs = BOTTOM_TABS.take(2)
     val rightTabs = BOTTOM_TABS.drop(2)
+    val attentionCount by com.keptang.di.ServiceLocator.attentionCount.collectAsStateWithLifecycle()
 
     Box(Modifier.fillMaxWidth()) {
         Surface(tonalElevation = 3.dp, modifier = Modifier.fillMaxWidth()) {
@@ -228,7 +242,14 @@ private fun KeptangBottomBar(currentRoute: String?, onNavigate: (String) -> Unit
                 }
                 Spacer(Modifier.weight(1f))
                 rightTabs.forEach { tab ->
-                    BottomBarItem(tab, selected = currentRoute == tab.route, onClick = { onNavigate(tab.route) }, modifier = Modifier.weight(1f))
+                    val badgeCount = if (tab.route == Routes.SETTINGS) attentionCount else 0
+                    BottomBarItem(
+                        tab,
+                        selected = currentRoute == tab.route,
+                        onClick = { onNavigate(tab.route) },
+                        badgeCount = badgeCount,
+                        modifier = Modifier.weight(1f)
+                    )
                 }
             }
         }
@@ -242,13 +263,19 @@ private fun KeptangBottomBar(currentRoute: String?, onNavigate: (String) -> Unit
 }
 
 @Composable
-private fun BottomBarItem(tab: BottomTab, selected: Boolean, onClick: () -> Unit, modifier: Modifier = Modifier) {
+private fun BottomBarItem(tab: BottomTab, selected: Boolean, onClick: () -> Unit, badgeCount: Int = 0, modifier: Modifier = Modifier) {
     val tint = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
     Column(
         modifier = modifier.clickable(onClick = onClick).padding(vertical = 8.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Icon(tab.icon, contentDescription = null, tint = tint)
+        if (badgeCount > 0) {
+            androidx.compose.material3.BadgedBox(badge = { androidx.compose.material3.Badge { Text(badgeCount.toString()) } }) {
+                Icon(tab.icon, contentDescription = null, tint = tint)
+            }
+        } else {
+            Icon(tab.icon, contentDescription = null, tint = tint)
+        }
         Text(stringResource(tab.labelRes), style = MaterialTheme.typography.labelSmall, color = tint, modifier = Modifier.padding(top = 2.dp))
     }
 }

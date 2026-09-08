@@ -3,15 +3,18 @@ package com.keptang.di
 import android.content.Context
 import com.keptang.capture.AudioFileStore
 import com.keptang.capture.CaptureProcessor
+import com.keptang.data.db.CaptureStatus
 import com.keptang.data.db.KeptangDatabase
 import com.keptang.data.repository.AppSettings
 import com.keptang.data.repository.BudgetRepository
 import com.keptang.data.repository.CaptureRepository
 import com.keptang.data.repository.CategoryRepository
 import com.keptang.data.repository.ExpenseRepository
+import com.keptang.data.repository.RecurringExpenseRepository
 import com.keptang.data.repository.SettingsRepository
 import com.keptang.notification.NotificationHelper
 import com.keptang.parser.ExpenseParser
+import com.keptang.recurring.RecurringExpenseGenerator
 import com.keptang.transcription.AndroidSpeechRecognitionProvider
 import com.keptang.transcription.TranscriptionProvider
 import kotlinx.coroutines.CoroutineScope
@@ -19,6 +22,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 
 /**
@@ -61,11 +65,33 @@ object ServiceLocator {
     val budgetRepository: BudgetRepository by lazy { BudgetRepository(database.budgetDao()) }
 
     val categoryRepository: CategoryRepository by lazy {
-        CategoryRepository(database.categoryDao(), database.expenseDao(), database.budgetDao())
+        CategoryRepository(database.categoryDao(), database.expenseDao(), database.budgetDao(), database.recurringExpenseDao())
     }
 
     val captureRepository: CaptureRepository by lazy {
         CaptureRepository(database.captureDao(), audioFileStore)
+    }
+
+    val recurringExpenseRepository: RecurringExpenseRepository by lazy {
+        RecurringExpenseRepository(database.recurringExpenseDao())
+    }
+
+    val recurringExpenseGenerator: RecurringExpenseGenerator by lazy {
+        RecurringExpenseGenerator(recurringExpenseRepository, captureRepository, expenseRepository)
+    }
+
+    /**
+     * Captures that need the user's attention - failed outright, or flagged needs-review (which
+     * [com.keptang.capture.CaptureProcessor] already sets whenever any of its expenses need
+     * review, so this single capture-status count covers both kinds without double-querying
+     * expenses). Shared by the Dashboard bell, the Settings shortcut's Inbox button, and the
+     * bottom nav's Settings badge. Eagerly shared like [currentSettings] so those call sites can
+     * read it without a dedicated ViewModel.
+     */
+    val attentionCount: StateFlow<Int> by lazy {
+        captureRepository.observeByStatuses(listOf(CaptureStatus.FAILED, CaptureStatus.NEEDS_REVIEW))
+            .map { it.size }
+            .stateIn(appScope, SharingStarted.Eagerly, 0)
     }
 
     val expenseParser: ExpenseParser by lazy { ExpenseParser() }

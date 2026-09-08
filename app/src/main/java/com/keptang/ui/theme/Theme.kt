@@ -1,34 +1,51 @@
 package com.keptang.ui.theme
 
-import android.os.Build
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
-import androidx.compose.material3.dynamicDarkColorScheme
-import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
+import com.keptang.data.repository.ColorTheme
 
-private val KeptangGreen = Color(0xFF0F6B5C)
-private val KeptangGreenDark = Color(0xFF7FD9C4)
+// "Default" - the original brand green, follows the system's light/dark setting.
+private val DefaultLight = lightColorScheme(primary = Color(0xFF0F6B5C))
+private val DefaultDark = darkColorScheme(primary = Color(0xFF7FD9C4))
 
-private val LightColors = lightColorScheme(primary = KeptangGreen)
-private val DarkColors = darkColorScheme(primary = KeptangGreenDark)
+// "Dark" - a distinct, always-dark violet/amber palette (not tied to the system setting).
+private val SombreColors = darkColorScheme(
+    primary = Color(0xFFA991F2),
+    onPrimary = Color(0xFF34186B),
+    primaryContainer = Color(0xFF4B2E8C),
+    onPrimaryContainer = Color(0xFFE9DDFF),
+    secondary = Color(0xFFF2A65A),
+    onSecondary = Color(0xFF4A2800),
+    secondaryContainer = Color(0xFF6B3D00),
+    onSecondaryContainer = Color(0xFFFFDDB3)
+)
+
+// "Light" - a distinct, always-light blue/coral palette (not tied to the system setting).
+private val ClairColors = lightColorScheme(
+    primary = Color(0xFF1E6FD9),
+    onPrimary = Color(0xFFFFFFFF),
+    primaryContainer = Color(0xFFD6E7FF),
+    onPrimaryContainer = Color(0xFF002D6B),
+    secondary = Color(0xFFE0604B),
+    onSecondary = Color(0xFFFFFFFF),
+    secondaryContainer = Color(0xFFFFDAD3),
+    onSecondaryContainer = Color(0xFF5C1B0F)
+)
 
 @Composable
 fun KeptangTheme(
+    colorTheme: ColorTheme = ColorTheme.DEFAULT,
     darkTheme: Boolean = isSystemInDarkTheme(),
-    dynamicColor: Boolean = true,
     content: @Composable () -> Unit
 ) {
-    val context = LocalContext.current
-    val colorScheme = when {
-        dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S ->
-            if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
-        darkTheme -> DarkColors
-        else -> LightColors
+    val colorScheme = when (colorTheme) {
+        ColorTheme.DEFAULT -> if (darkTheme) DefaultDark else DefaultLight
+        ColorTheme.DARK -> SombreColors
+        ColorTheme.LIGHT -> ClairColors
     }
     MaterialTheme(colorScheme = colorScheme, content = content)
 }

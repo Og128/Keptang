@@ -1,7 +1,6 @@
 package com.keptang.ui.categories
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -13,7 +12,6 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material3.Card
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -30,6 +28,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.keptang.R
 import com.keptang.data.db.CategoryEntity
+import com.keptang.ui.common.InfoCard
 import com.keptang.ui.theme.CategoryColors
 import com.keptang.ui.theme.CategoryIcons
 
@@ -58,7 +57,7 @@ fun CategoriesScreen(
 
 @Composable
 private fun CategoryRow(category: CategoryEntity, onClick: () -> Unit) {
-    Card(Modifier.fillMaxWidth().padding(vertical = 6.dp).clickable(onClick = onClick)) {
+    InfoCard(modifier = Modifier.fillMaxWidth().padding(vertical = 6.dp), onClick = onClick) {
         Row(Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
             Box(
                 Modifier.size(40.dp).clip(CircleShape).background(CategoryColors.parse(category.colorHex)),

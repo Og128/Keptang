@@ -11,6 +11,6 @@
         android:background="@android:color/transparent"
         android:contentDescription="@string/widget_mic_description"
         android:scaleType="centerCrop"
-        android:src="@drawable/widget_mic" />
+        android:src="@drawable/widget_mic_blanc" />
 
 </FrameLayout>
