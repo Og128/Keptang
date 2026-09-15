@@ -1,3 +1,12 @@
 # Copy this file to local.properties and point it at your Android SDK installation.
 # local.properties is machine-specific and must never be committed.
 sdk.dir=C\:\\Users\\YOUR_USER\\AppData\\Local\\Android\\Sdk
+
+# Release signing. Generate a keystore once with:
+#   keytool -genkeypair -v -keystore keystore/keptang-release.jks -storetype PKCS12 \
+#     -keyalg RSA -keysize 2048 -validity 10000 -alias keptang
+# Leave these out and the release build is simply left unsigned.
+KEPTANG_STORE_FILE=keystore/keptang-release.jks
+KEPTANG_STORE_PASSWORD=your-store-password
+KEPTANG_KEY_ALIAS=keptang
+KEPTANG_KEY_PASSWORD=your-key-password

@@ -11,3 +11,6 @@ local.properties
 /app/build
 /app/release
 *.hprof
+
+# Release keystore and its passwords (never commit these)
+/keystore/

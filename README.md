@@ -39,6 +39,29 @@ no backend.
   budgets, tagging expenses, exporting them as CSV, and changing settings — neither widget opens
   it.
 
+## Sharing a build
+
+Release builds are signed with a keystore that lives outside the repo. Generate one once:
+
+```
+keytool -genkeypair -v -keystore keystore/keptang-release.jks -storetype PKCS12 \
+  -keyalg RSA -keysize 2048 -validity 10000 -alias keptang
+```
+
+Then add `KEPTANG_STORE_FILE`, `KEPTANG_STORE_PASSWORD`, `KEPTANG_KEY_ALIAS` and
+`KEPTANG_KEY_PASSWORD` to `local.properties` (see `local.properties.example`). Both
+`local.properties` and `keystore/` are gitignored; keep a backup of the keystore somewhere safe,
+because Android refuses to install an update signed by a different key, so losing it means every
+tester has to uninstall and lose their data.
+
+```
+./gradlew assembleRelease
+```
+
+The APK lands in `app/build/outputs/apk/release/app-release.apk` and can be sent as-is; testers
+need to allow install from unknown sources. Bump `versionCode` in `app/build.gradle.kts` for every
+build you hand out, otherwise Android will not treat it as an update.
+
 ## Testing
 
 **Parser unit tests** (plain JVM, no device needed) — this is where the 8 required examples

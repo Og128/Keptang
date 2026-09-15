@@ -1,8 +1,20 @@
+import java.util.Properties
+
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
     id("com.google.devtools.ksp")
 }
+
+// Release signing comes from local.properties, which is machine-specific and never committed.
+// Without it (a fresh clone, CI), the release build stays unsigned rather than failing.
+val localProperties = Properties().apply {
+    val file = rootProject.file("local.properties")
+    if (file.exists()) file.inputStream().use { load(it) }
+}
+val releaseStoreFile = localProperties.getProperty("KEPTANG_STORE_FILE")
+    ?.let { rootProject.file(it) }
+    ?.takeIf { it.exists() }
 
 android {
     namespace = "com.keptang"
@@ -18,8 +30,20 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
+    signingConfigs {
+        if (releaseStoreFile != null) {
+            create("release") {
+                storeFile = releaseStoreFile
+                storePassword = localProperties.getProperty("KEPTANG_STORE_PASSWORD")
+                keyAlias = localProperties.getProperty("KEPTANG_KEY_ALIAS")
+                keyPassword = localProperties.getProperty("KEPTANG_KEY_PASSWORD")
+            }
+        }
+    }
+
     buildTypes {
         release {
+            signingConfig = signingConfigs.findByName("release")
             isMinifyEnabled = false
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
