@@ -10,8 +10,18 @@ import kotlinx.coroutines.flow.Flow
 @Dao
 interface TagDao {
 
-    @Query("SELECT * FROM tags ORDER BY name ASC")
-    fun observeAll(): Flow<List<TagEntity>>
+    /**
+     * Only tags still attached to at least one expense. Reading usage rather than the `tags`
+     * registry keeps a tag that was renamed, un-tagged, or lost to an expense deletion from
+     * lingering forever in the filter row as a chip that matches nothing - including when the
+     * rows disappear through SQLite's own cascade, which no Kotlin-side cleanup can intercept.
+     */
+    @Query("SELECT DISTINCT tag FROM expense_tags ORDER BY tag ASC")
+    fun observeNamesInUse(): Flow<List<String>>
+
+    /** Drops registry rows no expense references any more, so `tags` can't grow without bound. */
+    @Query("DELETE FROM tags WHERE name NOT IN (SELECT tag FROM expense_tags)")
+    suspend fun deleteUnusedTags()
 
     @Insert(onConflict = OnConflictStrategy.IGNORE)
     suspend fun upsert(tag: TagEntity)
@@ -38,5 +48,6 @@ interface TagDao {
         clearTagsForExpense(expenseId)
         tags.forEach { upsert(TagEntity(it)) }
         insertCrossRefs(tags.map { ExpenseTagCrossRef(expenseId, it) })
+        deleteUnusedTags()
     }
 }

@@ -11,6 +11,7 @@ import com.keptang.data.db.BudgetPeriodType
 import com.keptang.data.repository.CaptureRepository
 import com.keptang.data.repository.CategoryRepository
 import com.keptang.data.repository.ExpenseRepository
+import com.keptang.data.repository.LearnedCategoryRepository
 import com.keptang.data.repository.RecurringExpenseRepository
 import com.keptang.data.repository.SettingsRepository
 import com.keptang.data.repository.TagRepository
@@ -31,6 +32,7 @@ class ManualExpenseViewModel(
     private val recurringExpenseRepository: RecurringExpenseRepository,
     private val recurringExpenseGenerator: RecurringExpenseGenerator,
     private val tagRepository: TagRepository,
+    private val learnedCategoryRepository: LearnedCategoryRepository,
     private val expenseId: String?
 ) : ViewModel() {
 
@@ -49,6 +51,10 @@ class ManualExpenseViewModel(
 
     private val _existingTags = MutableStateFlow<List<String>>(emptyList())
     val existingTags: StateFlow<List<String>> = _existingTags.asStateFlow()
+
+    /** Tags already in use elsewhere, offered as one-tap suggestions so spellings stay consistent. */
+    val knownTags: StateFlow<List<String>> = tagRepository.observeAllNames()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     init {
         if (expenseId != null) {
@@ -75,7 +81,7 @@ class ManualExpenseViewModel(
         category: String,
         account: String?,
         paymentMethod: String?,
-        merchant: String?,
+        description: String?,
         notes: String?,
         timeZoneId: String,
         occurredAtEpochMillis: Long,
@@ -84,6 +90,8 @@ class ManualExpenseViewModel(
     ) {
         viewModelScope.launch {
             val existing = _existingExpense.value
+            // Learn before the update overwrites what the parser had originally guessed.
+            learnFromCorrection(existing, category, description)
             val savedId = if (existing != null) {
                 expenseRepository.update(
                     existing.copy(
@@ -94,7 +102,7 @@ class ManualExpenseViewModel(
                         category = category,
                         account = account?.takeIf { it.isNotBlank() },
                         paymentMethod = paymentMethod?.takeIf { it.isNotBlank() },
-                        merchant = merchant?.takeIf { it.isNotBlank() },
+                        description = description?.takeIf { it.isNotBlank() },
                         notes = notes?.takeIf { it.isNotBlank() }
                     )
                 )
@@ -110,7 +118,7 @@ class ManualExpenseViewModel(
                     category = category,
                     account = account?.takeIf { it.isNotBlank() },
                     paymentMethod = paymentMethod?.takeIf { it.isNotBlank() },
-                    merchant = merchant?.takeIf { it.isNotBlank() },
+                    description = description?.takeIf { it.isNotBlank() },
                     notes = notes?.takeIf { it.isNotBlank() }
                 )
                 created.id
@@ -120,7 +128,23 @@ class ManualExpenseViewModel(
         }
     }
 
-    /** Deletes the expense being edited; its tags are cleaned up automatically via the DB cascade. */
+    /**
+     * Teaches the parser that this description means this category, but only when the user is
+     * actually correcting it: changing an amount or a date on an expense that was already
+     * categorised correctly must not re-teach what the parser already knew, and hand-typed
+     * expenses teach just as well as spoken ones since both end up in the same ledger.
+     */
+    private suspend fun learnFromCorrection(existing: ExpenseEntity?, category: String, description: String?) {
+        val categoryChanged = existing == null || existing.category != category
+        if (categoryChanged) {
+            learnedCategoryRepository.learn(description, category)
+        }
+    }
+
+    /**
+     * Deletes the expense being edited. Its tags go with it through the DB cascade, and
+     * [ExpenseRepository.delete] also clears the placeholder capture behind a manual entry.
+     */
     fun delete(onDeleted: () -> Unit) {
         val id = expenseId ?: return
         viewModelScope.launch {
@@ -163,6 +187,7 @@ class ManualExpenseViewModel(
                     ServiceLocator.recurringExpenseRepository,
                     ServiceLocator.recurringExpenseGenerator,
                     ServiceLocator.tagRepository,
+                    ServiceLocator.learnedCategoryRepository,
                     expenseId
                 )
             }

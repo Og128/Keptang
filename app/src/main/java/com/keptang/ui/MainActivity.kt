@@ -1,6 +1,7 @@
 package com.keptang.ui
 
 import android.Manifest
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
@@ -35,9 +36,17 @@ class MainActivity : ComponentActivity() {
         ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) ==
             PackageManager.PERMISSION_GRANTED
 
+    /**
+     * Held as state rather than read once from [getIntent], because this activity is `singleTask`:
+     * when the app is already open, tapping a result notification delivers the capture id through
+     * [onNewIntent] and never re-runs [onCreate]. Reading it only there meant the tap simply
+     * raised whatever screen happened to be showing.
+     */
+    private var startCaptureId by mutableStateOf<String?>(null)
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        val startCaptureId = intent.getStringExtra(EXTRA_OPEN_CAPTURE_ID)
+        startCaptureId = intent.getStringExtra(EXTRA_OPEN_CAPTURE_ID)
 
         setContent {
             val settings by ServiceLocator.settingsRepository.settings
@@ -70,10 +79,20 @@ class MainActivity : ComponentActivity() {
                             lifecycleScope.launch { ServiceLocator.settingsRepository.setFirstRunCompleted() }
                         }
                     )
-                    true -> KeptangNavHost(startCaptureId = startCaptureId)
+                    // Cleared once consumed, so tapping the same notification again still navigates.
+                    true -> KeptangNavHost(
+                        startCaptureId = startCaptureId,
+                        onStartCaptureConsumed = { startCaptureId = null }
+                    )
                 }
             }
         }
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        intent.getStringExtra(EXTRA_OPEN_CAPTURE_ID)?.let { startCaptureId = it }
     }
 
     private fun requiredPermissions(): Array<String> {

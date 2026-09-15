@@ -86,14 +86,20 @@ class NotificationHelper(private val context: Context) {
             .build()
     }
 
+    /**
+     * Posts what happened to a capture. An expense no category matched is still saved and still
+     * counts - the notification only says so, so it can be fixed now rather than discovered
+     * weeks later in a budget that looks wrong.
+     */
     fun notifyResult(captureId: String, outcome: ProcessOutcome) {
         val strings = context
-        val text = when (outcome) {
+        val baseText = when (outcome) {
             is ProcessOutcome.Processed -> pluralExpensesAdded(strings, outcome.approvedCount)
             is ProcessOutcome.NeedsReview -> when {
                 outcome.approvedCount > 0 ->
-                    strings.getString(
-                        R.string.notif_result_needs_review_combo,
+                    strings.resources.getQuantityString(
+                        R.plurals.notif_result_needs_review_combo,
+                        outcome.reviewCount,
                         pluralExpensesAdded(strings, outcome.approvedCount),
                         outcome.reviewCount
                     )
@@ -102,6 +108,22 @@ class NotificationHelper(private val context: Context) {
             ProcessOutcome.SavedForLater -> strings.getString(R.string.notif_result_saved_for_later)
             ProcessOutcome.CouldNotUnderstand -> strings.getString(R.string.notif_result_could_not_understand)
             ProcessOutcome.AlreadyProcessed, ProcessOutcome.NotFound -> return
+        }
+
+        val uncategorizedCount = when (outcome) {
+            is ProcessOutcome.Processed -> outcome.uncategorizedCount
+            is ProcessOutcome.NeedsReview -> outcome.uncategorizedCount
+            else -> 0
+        }
+        val text = if (uncategorizedCount > 0) {
+            strings.resources.getQuantityString(
+                R.plurals.notif_result_category_missing,
+                uncategorizedCount,
+                baseText,
+                uncategorizedCount
+            )
+        } else {
+            baseText
         }
 
         val contentIntent = PendingIntent.getActivity(

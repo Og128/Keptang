@@ -34,7 +34,7 @@ class BudgetCalculatorTest {
         category = category,
         account = account,
         paymentMethod = null,
-        merchant = null,
+        description = null,
         confidence = 1f,
         reviewStatus = ReviewStatus.APPROVED,
         createdAtEpochMillis = 0L,

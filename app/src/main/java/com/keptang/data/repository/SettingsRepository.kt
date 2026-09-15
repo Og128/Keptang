@@ -21,6 +21,26 @@ enum class DashboardCard {
     SPENDING, BUDGET, RECENT
 }
 
+/**
+ * The persisted form of the Dashboard's card layout: a comma-separated list of [DashboardCard]
+ * names, in display order, holding only the visible ones. Kept as free functions so the encoding
+ * can be tested without a DataStore - a decode that silently drops a card is invisible in the UI
+ * (the card just stops appearing) and would otherwise only surface as a bug report.
+ */
+internal fun encodeDashboardCards(cards: List<DashboardCard>): String =
+    cards.joinToString(",") { card -> card.name }
+
+/**
+ * Names this build no longer knows (a card removed since, or a downgrade) are skipped rather than
+ * throwing. A stored empty string means "every card hidden", which is a legitimate choice and must
+ * not be confused with "nothing stored yet" - only the latter falls back to showing everything.
+ */
+internal fun decodeDashboardCards(raw: String?): List<DashboardCard> =
+    raw?.split(",")
+        ?.mapNotNull { name -> runCatching { DashboardCard.valueOf(name) }.getOrNull() }
+        ?.distinct()
+        ?: DashboardCard.entries
+
 data class AppSettings(
     val profileName: String = "",
     val currencyCode: String = Defaults.CURRENCY_CODE,
@@ -59,9 +79,7 @@ class SettingsRepository(private val context: Context) {
             colorTheme = prefs[Keys.COLOR_THEME]?.let { name -> runCatching { ColorTheme.valueOf(name) }.getOrNull() }
                 ?: ColorTheme.DEFAULT,
             firstRunCompleted = prefs[Keys.FIRST_RUN] == "true",
-            dashboardCardOrder = prefs[Keys.DASHBOARD_CARDS]?.let { raw ->
-                raw.split(",").mapNotNull { name -> runCatching { DashboardCard.valueOf(name) }.getOrNull() }
-            } ?: DashboardCard.entries
+            dashboardCardOrder = decodeDashboardCards(prefs[Keys.DASHBOARD_CARDS])
         )
     }
 
@@ -82,5 +100,5 @@ class SettingsRepository(private val context: Context) {
     suspend fun setFirstRunCompleted() = context.dataStore.edit { it[Keys.FIRST_RUN] = "true" }
 
     suspend fun setDashboardCardOrder(cards: List<DashboardCard>) =
-        context.dataStore.edit { it[Keys.DASHBOARD_CARDS] = cards.joinToString(",") { card -> card.name } }
+        context.dataStore.edit { it[Keys.DASHBOARD_CARDS] = encodeDashboardCards(cards) }
 }

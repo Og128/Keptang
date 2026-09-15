@@ -57,10 +57,14 @@ class SettingsViewModel(
         }
     }
 
-    /** Builds a CSV of every expense and hands the caller a share [Intent] once it's written to cache. */
+    /**
+     * Builds a CSV of every *approved* expense and hands the caller a share [Intent] once it is
+     * written to cache - matching what the Expenses list shows, rather than leaking rows the user
+     * has not reviewed or has rejected.
+     */
     fun exportExpenses(context: Context, onReady: (Intent) -> Unit) {
         viewModelScope.launch {
-            val expenses = expenseRepository.observeAll().first()
+            val expenses = expenseRepository.observeApproved().first()
             val tagsByExpenseId = tagRepository.observeTagsByExpenseId().first()
             val csv = CsvExporter.buildCsv(expenses, tagsByExpenseId)
             val file = CsvExporter.writeToCache(context, csv)

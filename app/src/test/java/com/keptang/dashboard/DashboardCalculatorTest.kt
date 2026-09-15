@@ -30,7 +30,7 @@ class DashboardCalculatorTest {
         category = category,
         account = null,
         paymentMethod = null,
-        merchant = null,
+        description = null,
         confidence = 1f,
         reviewStatus = ReviewStatus.APPROVED,
         createdAtEpochMillis = 0L,

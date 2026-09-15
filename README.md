@@ -4,12 +4,6 @@ A local-first, voice-first expense tracker prototype for Android. Tap a home-scr
 speak an expense, and it's transcribed, parsed, and saved on-device — no cloud APIs, no LLMs,
 no backend.
 
-> **Build environment note:** this project was authored in an environment without the Android
-> SDK, a JDK, or Gradle installed, so the commands below have not been executed here. Everything
-> was written and hand-traced for correctness (the parser especially — see
-> `ExpenseParserTest.kt`), but you should run the verification steps yourself in Android Studio
-> before treating this as done. See "Verification checklist" below.
-
 ## Setup
 
 1. Install **Android Studio Koala (2024.1)** or newer, with SDK Platform 34 and a device or
@@ -35,9 +29,15 @@ no backend.
 - Recording stops automatically after ~1.5s of silence, at 60s regardless, or on a second widget
   tap / the notification's Stop action.
 - A result notification appears (e.g. *"2 expenses added"*) with an **Undo** action. Tapping the
-  notification opens the app to that capture's detail screen.
-- The app itself (Inbox / Expenses / Review / Settings tabs) is only needed to review ambiguous
-  captures, browse history, retry failures, or change settings — the widget never opens it.
+  notification opens the app to that capture's detail screen (only reliably from a cold start —
+  see "Known issues").
+- A second widget, **Keptang Quick Add**, opens a small popup over the home screen for typing an
+  expense the same way you'd say it ("50 coffee"): same parser, no microphone, and it never opens
+  the app's own UI either.
+- The app itself (Dashboard / Expenses / Budgets / Settings tabs, with Inbox and Review reached
+  from Settings) is for reviewing ambiguous captures, browsing and editing history, setting
+  budgets, tagging expenses, exporting them as CSV, and changing settings — neither widget opens
+  it.
 
 ## Testing
 
@@ -151,9 +151,31 @@ consequence this has for retrying a capture whose transcription failed.
 `", and"` / `" and "` / `","`, track a running "current date" that a date phrase updates and
 that carries forward onto undated clauses, and for each clause extract an amount (skip the
 clause entirely if none is found — never invent one), then a category, account, payment method,
-and merchant via independent regex-based extractors. See `ExpenseParser.kt`'s class doc for the
+and description via independent regex-based extractors. See `ExpenseParser.kt`'s class doc for the
 full splitting walkthrough and `ExpenseParserTest.kt` for all 8 required examples traced through
 it with exact expected amounts/dates/categories/counts.
+
+A comma only starts a new expense if what follows brings its own amount — speech recognisers
+punctuate on their own, and `"Lunch, 50 baht"` has to stay one expense while
+`"550 baht for dinner, 25 baht for coffee"` still splits in two.
+
+**Categories come from the user, not from this file.** `CategoryRules`' built-in keyword lists
+only exist to make a fresh install useful on day one; the parse itself is handed a
+`CategoryVocabulary` (assembled in `ServiceLocator`) that consults, in order: what the user taught
+by correcting a category by hand (`learned_categories`), then their own category names, then the
+built-ins. So creating a "Massage" category is enough for *"Massage 300 baht"* to land in it, and
+correcting one expense from Uncategorized to Entertainment teaches every future one — which
+matters because the right answer is personal (massage is Entertainment for one person and Health
+for another). Longest keyword wins within each source.
+
+`DescriptionExtractor` runs independently of all that, so a word no category knows still names its
+expense (*"Massage 300 baht"* → "Massage") and a real merchant is no longer thrown away when a
+category keyword sits in front of it (*"Coffee at Starbucks"* → "Starbucks", category Coffee).
+That description is also the key the category learning keys on.
+
+When nothing matches, the expense is still saved and still counts toward budgets — it is never
+held back for review. The result notification says a category is missing, and the Expenses list
+grows a "No category (n)" filter chip until they're sorted out.
 
 ## Device/API limitations
 
@@ -207,8 +229,16 @@ it with exact expected amounts/dates/categories/counts.
 - **Amounts with thousands separators** ("1,000 baht") aren't recognized, since the clause
   splitter treats bare commas as clause boundaries. **Next step:** protect digit-group commas
   before splitting.
-- The Compose UI is intentionally minimal (per spec) — no swipe gestures, animations, or
-  empty-state illustrations. It's built to prove the data flow, not to be a finished product.
-- This was authored without access to a JDK/Android SDK/emulator, so `./gradlew build`,
-  `./gradlew test`, and `./gradlew connectedAndroidTest` have **not actually been run** against
-  this code. Run them before relying on this as anything more than a well-reasoned first pass.
+- **The parser always records amounts in THB**, whatever the Default Currency is set to
+  (`AmountExtractor`). Since budgets exclude non-default-currency expenses (see
+  [ADR-0002](docs/adr/0002-budgets-exclude-non-default-currency-expenses.md)), a non-THB
+  installation sees every *spoken* expense excluded from its budgets, while manually-typed ones
+  (which do use the configured currency) still count. Deliberate for now — the app is used in
+  THB — but it's the first thing to fix before anyone else uses it.
+- **Voice captures and the quick-add widget are timestamped in `Defaults.TIME_ZONE_ID`**
+  (Asia/Bangkok), not the configured Time zone: `ServiceLocator` builds `CaptureProcessor`
+  without a `zoneId`, and `VoiceCaptureService` passes the default straight through. Manual
+  entries do honour the setting. Same rationale as above — only bites installations outside
+  that zone.
+- **`isMinifyEnabled = false` for release builds**, so no R8 shrinking/obfuscation is applied
+  and the APK is meaningfully larger than it needs to be.

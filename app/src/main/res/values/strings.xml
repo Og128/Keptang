@@ -21,8 +21,16 @@
 
     <string name="notif_result_saved_for_later">Recording saved for later processing</string>
     <string name="notif_result_could_not_understand">Could not understand the recording — tap to review</string>
-    <string name="notif_result_needs_review_combo">%1$s, %2$d needs review</string>
+    <plurals name="notif_result_needs_review_combo">
+        <item quantity="one">%1$s, %2$d needs review</item>
+        <item quantity="other">%1$s, %2$d need review</item>
+    </plurals>
     <string name="notif_mic_permission_needed">Microphone permission needed — open Keptang to grant it</string>
+
+    <plurals name="notif_result_category_missing">
+        <item quantity="one">%1$s — category missing, tap to set it</item>
+        <item quantity="other">%1$s — %2$d without a category, tap to set them</item>
+    </plurals>
 
     <plurals name="notif_expenses_added">
         <item quantity="one">%1$d expense added</item>
@@ -119,8 +127,9 @@
     <string name="review_amount_label">Amount (%1$s)</string>
     <string name="review_category_label">Category</string>
 
-    <string name="expenses_merchant_placeholder">-</string>
+    <string name="expenses_description_placeholder">-</string>
     <string name="expenses_filter_all_categories">All</string>
+    <string name="expenses_filter_uncategorized">No category (%1$d)</string>
     <string name="expenses_search_placeholder">Search</string>
 
     <string name="manual_add_title">Add expense</string>
@@ -130,7 +139,7 @@
     <string name="manual_add_amount">Amount</string>
     <string name="manual_add_category">Category</string>
     <string name="manual_add_date">Date</string>
-    <string name="manual_add_merchant">Name of the expense</string>
+    <string name="manual_add_description">Description</string>
     <string name="manual_add_account">Account</string>
     <string name="manual_add_payment_method">Payment method</string>
     <string name="manual_add_notes">Notes</string>
@@ -223,7 +232,10 @@
     <string name="dashboard_budget_empty">No budget set yet.</string>
     <string name="dashboard_budget_setup_action">Set up a budget</string>
     <string name="dashboard_budget_view_all">View all budgets</string>
-    <string name="dashboard_review_count">%1$d item(s) need your attention</string>
+    <plurals name="dashboard_review_count">
+        <item quantity="one">%1$d item needs your attention</item>
+        <item quantity="other">%1$d items need your attention</item>
+    </plurals>
     <string name="dashboard_review_action">Review now</string>
     <string name="dashboard_recent_label">Recent expenses</string>
     <string name="dashboard_customize_action">Customize dashboard</string>

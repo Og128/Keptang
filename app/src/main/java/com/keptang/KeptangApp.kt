@@ -16,10 +16,9 @@ class KeptangApp : Application() {
         super.onCreate()
         ServiceLocator.init(this)
 
-        // Notification channel names/descriptions are built outside the Compose tree (see
-        // NotificationHelper.localizedContext()), so they need their own re-localization on
-        // every language change - re-creating a channel with the same ID just updates its
-        // label/description, it doesn't duplicate the channel.
+        // Notification channels are created eagerly so the first recording never races their
+        // registration. Re-creating a channel with the same ID just updates its label and
+        // description rather than duplicating it, so re-running this is harmless.
         ProcessLifecycleOwner.get().lifecycleScope.launch {
             ServiceLocator.currentSettings
                 .map { it.languageCode }

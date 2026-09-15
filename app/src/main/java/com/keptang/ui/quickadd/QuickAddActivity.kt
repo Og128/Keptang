@@ -64,7 +64,10 @@ class QuickAddActivity : ComponentActivity() {
                     onSubmit = { text ->
                         lifecycleScope.launch {
                             val captureId = ServiceLocator.captureRepository.createManualEntry(settings.timeZoneId)
-                            ServiceLocator.captureProcessor.reprocessEditedTranscript(captureId, text)
+                            val outcome = ServiceLocator.captureProcessor.reprocessEditedTranscript(captureId, text)
+                            // The popup closes immediately, so the notification is the only feedback
+                            // there is - including when nothing could be parsed out of the text.
+                            ServiceLocator.notificationHelper.notifyResult(captureId, outcome)
                             finish()
                         }
                     }

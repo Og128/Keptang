@@ -56,6 +56,7 @@ import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -108,13 +109,14 @@ fun ManualExpenseScreen(
     val existingExpense by viewModel.existingExpense.collectAsStateWithLifecycle()
     val isFromVoiceCapture by viewModel.isFromVoiceCapture.collectAsStateWithLifecycle()
     val existingTags by viewModel.existingTags.collectAsStateWithLifecycle()
+    val knownTags by viewModel.knownTags.collectAsStateWithLifecycle()
     val isEditMode = expenseId != null
 
     var amountText by remember { mutableStateOf("") }
     var currencyCode by remember(settings.currencyCode) { mutableStateOf(settings.currencyCode) }
     var category by remember { mutableStateOf("") }
     var categoryMenuExpanded by remember { mutableStateOf(false) }
-    var merchant by remember { mutableStateOf("") }
+    var description by remember { mutableStateOf("") }
     var notes by remember { mutableStateOf("") }
     var account by remember(settings.defaultAccount) { mutableStateOf(settings.defaultAccount) }
     var paymentMethod by remember { mutableStateOf("") }
@@ -142,7 +144,7 @@ fun ManualExpenseScreen(
     var recurringCategoryMenuExpanded by remember { mutableStateOf(false) }
     var recurringPeriodType by remember { mutableStateOf(BudgetPeriodType.MONTHLY) }
     var recurringMonthlyAnchorText by remember { mutableStateOf("1") }
-    var recurringWeeklyAnchor by remember { mutableStateOf(1) }
+    var recurringWeeklyAnchor by remember { mutableIntStateOf(1) }
 
     LaunchedEffect(existingExpense) {
         val expense = existingExpense
@@ -150,7 +152,7 @@ fun ManualExpenseScreen(
             amountText = formatMoneyInput(expense.amountMinorUnits, expense.currencyCode)
             currencyCode = expense.currencyCode
             category = expense.category
-            merchant = expense.merchant.orEmpty()
+            description = expense.description.orEmpty()
             notes = expense.notes.orEmpty()
             account = expense.account.orEmpty()
             paymentMethod = expense.paymentMethod.orEmpty()
@@ -173,7 +175,7 @@ fun ManualExpenseScreen(
             category = category.ifBlank { defaultCategory },
             account = account,
             paymentMethod = paymentMethod,
-            merchant = merchant,
+            description = description,
             notes = notes,
             timeZoneId = settings.timeZoneId,
             occurredAtEpochMillis = occurredAtEpochMillis,
@@ -339,8 +341,8 @@ fun ManualExpenseScreen(
                             modifier = Modifier.width(64.dp).padding(start = 8.dp)
                         )
                     }
-                    FormRow(label = stringResource(R.string.manual_add_merchant), isLast = true) {
-                        InlineValueField(value = merchant, onValueChange = { merchant = it }, modifier = Modifier.weight(1f))
+                    FormRow(label = stringResource(R.string.manual_add_description), isLast = true) {
+                        InlineValueField(value = description, onValueChange = { description = it }, modifier = Modifier.weight(1f))
                     }
                 }
 
@@ -365,10 +367,15 @@ fun ManualExpenseScreen(
                 TagInput(
                     tags = tags,
                     tagInput = tagInput,
+                    suggestions = knownTags,
                     onTagInputChange = { tagInput = it },
                     onAddTag = {
                         val trimmed = tagInput.trim()
                         if (trimmed.isNotBlank() && trimmed !in tags) tags = tags + trimmed
+                        tagInput = ""
+                    },
+                    onAddSuggestion = { suggestion ->
+                        if (suggestion !in tags) tags = tags + suggestion
                         tagInput = ""
                     },
                     onRemoveTag = { tag -> tags = tags - tag },
@@ -570,16 +577,26 @@ private fun RecurringInlineForm(
     }
 }
 
-/** Free-form tags entered one at a time - Enter or the trailing add button commits the current text as a removable chip. */
+/**
+ * Free-form tags entered one at a time - Enter or the trailing add button commits the current
+ * text as a removable chip. Tags already used elsewhere are offered as one-tap suggestions, since
+ * a tag only earns its keep by being spelled the same way across expenses.
+ */
 @Composable
 private fun TagInput(
     tags: List<String>,
     tagInput: String,
+    suggestions: List<String>,
     onTagInputChange: (String) -> Unit,
     onAddTag: () -> Unit,
+    onAddSuggestion: (String) -> Unit,
     onRemoveTag: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val matchingSuggestions = suggestions.filter { suggestion ->
+        suggestion !in tags && (tagInput.isBlank() || suggestion.contains(tagInput.trim(), ignoreCase = true))
+    }
+
     Column(modifier) {
         if (tags.isNotEmpty()) {
             Row(
@@ -614,6 +631,20 @@ private fun TagInput(
             )
             IconButton(onClick = onAddTag, enabled = tagInput.isNotBlank()) {
                 Icon(Icons.Filled.Add, contentDescription = stringResource(R.string.action_save))
+            }
+        }
+        if (matchingSuggestions.isNotEmpty()) {
+            Row(
+                Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).padding(top = 8.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                matchingSuggestions.forEach { suggestion ->
+                    InputChip(
+                        selected = false,
+                        onClick = { onAddSuggestion(suggestion) },
+                        label = { Text(suggestion) }
+                    )
+                }
             }
         }
     }

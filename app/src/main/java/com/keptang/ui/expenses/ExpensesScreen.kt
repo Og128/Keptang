@@ -24,6 +24,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.CalendarMonth
+import androidx.compose.material.icons.filled.HelpOutline
 import androidx.compose.material.icons.filled.Repeat
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Sell
@@ -55,6 +56,7 @@ import com.keptang.R
 import com.keptang.data.db.CategoryEntity
 import com.keptang.data.db.ExpenseEntity
 import com.keptang.data.db.RecurringExpenseEntity
+import com.keptang.parser.UNCATEGORIZED
 import com.keptang.ui.common.formatDateHeader
 import com.keptang.ui.common.formatMoney
 import com.keptang.ui.common.localDateOf
@@ -115,7 +117,7 @@ fun ExpensesScreen(
         }
 
         val searchedExpenses = expenses.filter {
-            searchQuery.isBlank() || it.merchant?.contains(searchQuery, ignoreCase = true) == true
+            searchQuery.isBlank() || it.description?.contains(searchQuery, ignoreCase = true) == true
         }
 
         when (viewMode) {
@@ -129,6 +131,7 @@ fun ExpensesScreen(
                 CategoryFilterRow(
                     categories = categoriesByName.values.toList(),
                     selected = selectedCategory,
+                    uncategorizedCount = searchedExpenses.count { it.category == UNCATEGORIZED },
                     onSelect = { selectedCategory = it }
                 )
                 if (allTagNames.isNotEmpty()) {
@@ -251,6 +254,7 @@ private fun MonthNavigator(
 private fun CategoryFilterRow(
     categories: List<CategoryEntity>,
     selected: String?,
+    uncategorizedCount: Int,
     onSelect: (String?) -> Unit
 ) {
     Row(
@@ -262,6 +266,23 @@ private fun CategoryFilterRow(
             onClick = { onSelect(null) },
             label = { Text(stringResource(R.string.expenses_filter_all_categories)) }
         )
+        // Only ever offered when something is actually missing a category, so it disappears once
+        // everything has been sorted out rather than sitting there as a permanent empty filter.
+        if (uncategorizedCount > 0) {
+            FilterChip(
+                selected = selected == UNCATEGORIZED,
+                onClick = { onSelect(if (selected == UNCATEGORIZED) null else UNCATEGORIZED) },
+                label = { Text(stringResource(R.string.expenses_filter_uncategorized, uncategorizedCount)) },
+                leadingIcon = {
+                    Icon(
+                        Icons.Filled.HelpOutline,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.error,
+                        modifier = Modifier.size(18.dp)
+                    )
+                }
+            )
+        }
         categories.forEach { category ->
             FilterChip(
                 selected = selected == category.name,
@@ -369,7 +390,7 @@ internal fun ExpenseCard(expense: ExpenseEntity, category: CategoryEntity?, recu
             CategoryIconBadge(category, color, isRecurring = recurring != null)
             Column(Modifier.weight(1f).padding(start = 12.dp)) {
                 Text(
-                    expense.merchant?.takeIf { it.isNotBlank() } ?: stringResource(R.string.expenses_merchant_placeholder),
+                    expense.description?.takeIf { it.isNotBlank() } ?: stringResource(R.string.expenses_description_placeholder),
                     style = MaterialTheme.typography.bodyLarge
                 )
                 val extra = listOfNotNull(

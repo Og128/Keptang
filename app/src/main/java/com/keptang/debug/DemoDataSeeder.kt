@@ -21,7 +21,7 @@ import kotlin.random.Random
  */
 object DemoDataSeeder {
 
-    private val MERCHANTS_BY_CATEGORY = mapOf(
+    private val DESCRIPTIONS_BY_CATEGORY = mapOf(
         "Transport" to listOf("BTS Skytrain", "Grab", "Taxi", "Gas station"),
         "Dining" to listOf("Som Tam Stall", "Noodle Shop", "Pizza Company", "Night Market"),
         "Coffee" to listOf("Amazon Coffee", "Starbucks", "Local Cafe"),
@@ -65,7 +65,7 @@ object DemoDataSeeder {
                 category = category.name,
                 account = settings.defaultAccount,
                 paymentMethod = PAYMENT_METHODS.random(),
-                merchant = MERCHANTS_BY_CATEGORY[category.name]?.randomOrNull()
+                description = DESCRIPTIONS_BY_CATEGORY[category.name]?.randomOrNull()
             )
         }
     }

@@ -42,7 +42,7 @@ class CaptureProcessorInstrumentedTest {
         db = Room.inMemoryDatabaseBuilder(context, KeptangDatabase::class.java)
             .allowMainThreadQueries()
             .build()
-        expenseRepository = ExpenseRepository(db.expenseDao())
+        expenseRepository = ExpenseRepository(db, db.expenseDao(), db.captureDao())
         captureRepository = CaptureRepository(db.captureDao(), AudioFileStore(context))
         fakeProvider = FakeTranscriptionProvider()
         processor = CaptureProcessor(captureRepository, expenseRepository, fakeProvider, ExpenseParser())

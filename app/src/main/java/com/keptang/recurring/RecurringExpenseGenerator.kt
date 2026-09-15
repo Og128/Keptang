@@ -60,7 +60,7 @@ class RecurringExpenseGenerator(
             category = recurring.category,
             account = null,
             paymentMethod = null,
-            merchant = recurring.name,
+            description = recurring.name,
             recurringExpenseId = recurring.id
         )
     }

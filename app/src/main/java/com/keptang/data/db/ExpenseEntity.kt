@@ -28,7 +28,13 @@ data class ExpenseEntity(
     @ColumnInfo(name = "category") val category: String,
     @ColumnInfo(name = "account") val account: String?,
     @ColumnInfo(name = "payment_method") val paymentMethod: String?,
-    @ColumnInfo(name = "merchant") val merchant: String?,
+    /**
+     * What the expense was for, as shown in the ledger: a merchant ("Starbucks"), a thing
+     * ("Massage"), or whatever the user typed. The column is still called `merchant` from when
+     * this only ever held one - renaming it would mean recreating the table, which would cascade
+     * into `expense_tags` and drop every tag link, so the name stays put at the SQL level only.
+     */
+    @ColumnInfo(name = "merchant") val description: String?,
     @ColumnInfo(name = "notes") val notes: String? = null,
     @ColumnInfo(name = "recurring_expense_id") val recurringExpenseId: String? = null,
     @ColumnInfo(name = "confidence") val confidence: Float,

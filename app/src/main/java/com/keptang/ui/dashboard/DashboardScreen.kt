@@ -54,6 +54,7 @@ import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
@@ -72,6 +73,7 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -312,7 +314,7 @@ private fun DashboardCustomizeDialog(
     val order = remember { mutableStateListOf(*(cardOrder + DashboardCard.entries.filterNot { it in cardOrder }).toTypedArray()) }
     val checked = remember { mutableStateMapOf(*DashboardCard.entries.map { it to (it in cardOrder) }.toTypedArray()) }
     var draggingCard by remember { mutableStateOf<DashboardCard?>(null) }
-    var dragOffset by remember { mutableStateOf(0f) }
+    var dragOffset by remember { mutableFloatStateOf(0f) }
     val rowHeightPx = with(LocalDensity.current) { CUSTOMIZE_ROW_HEIGHT.toPx() }
 
     AlertDialog(
@@ -416,7 +418,7 @@ private fun ReviewCard(attentionCount: Int, onOpenReview: () -> Unit) {
             ) {
                 Icon(Icons.Filled.Info, contentDescription = null, tint = MaterialTheme.colorScheme.onErrorContainer)
                 Text(
-                    stringResource(R.string.dashboard_review_count, attentionCount),
+                    pluralStringResource(R.plurals.dashboard_review_count, attentionCount, attentionCount),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onErrorContainer,
                     modifier = Modifier.weight(1f).padding(horizontal = 12.dp)

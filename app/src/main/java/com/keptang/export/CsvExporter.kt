@@ -31,7 +31,7 @@ object CsvExporter {
                     expense.currencyCode,
                     expense.category,
                     tagsByExpenseId[expense.id].orEmpty().joinToString(";"),
-                    expense.merchant.orEmpty(),
+                    expense.description.orEmpty(),
                     expense.account.orEmpty(),
                     expense.paymentMethod.orEmpty(),
                     expense.notes.orEmpty()

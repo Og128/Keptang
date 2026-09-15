@@ -1,14 +1,13 @@
 package com.keptang.data.repository
 
 import com.keptang.data.db.TagDao
-import com.keptang.data.db.TagEntity
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 
 class TagRepository(private val tagDao: TagDao) {
 
-    /** Every tag name ever used, for autocomplete - not scoped to a single expense. */
-    fun observeAllNames(): Flow<List<String>> = tagDao.observeAll().map { tags -> tags.map(TagEntity::name) }
+    /** Every tag currently attached to at least one expense - backs both the filter row and the form's suggestions. */
+    fun observeAllNames(): Flow<List<String>> = tagDao.observeNamesInUse()
 
     fun observeTagsForExpense(expenseId: String): Flow<List<String>> = tagDao.observeTagsForExpense(expenseId)
 

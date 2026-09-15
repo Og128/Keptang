@@ -9,6 +9,7 @@ import com.keptang.data.db.CaptureStatus
 import com.keptang.data.db.ExpenseEntity
 import com.keptang.data.repository.CaptureRepository
 import com.keptang.data.repository.ExpenseRepository
+import com.keptang.data.repository.LearnedCategoryRepository
 import com.keptang.di.ServiceLocator
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -18,7 +19,8 @@ import kotlinx.coroutines.launch
 
 class ReviewViewModel(
     private val expenseRepository: ExpenseRepository,
-    private val captureRepository: CaptureRepository
+    private val captureRepository: CaptureRepository,
+    private val learnedCategoryRepository: LearnedCategoryRepository
 ) : ViewModel() {
 
     val needsReview: StateFlow<List<ExpenseEntity>> = expenseRepository.observeNeedsReview()
@@ -48,8 +50,19 @@ class ReviewViewModel(
         viewModelScope.launch { expenseRepository.reject(expenseId) }
     }
 
+    /**
+     * Saves a reviewed expense, teaching the parser when the user changed its category - the
+     * Review screen is where a misread category is most likely to be fixed, so a correction made
+     * here has to count exactly like one made on the edit screen.
+     */
     fun update(expense: ExpenseEntity) {
-        viewModelScope.launch { expenseRepository.update(expense) }
+        viewModelScope.launch {
+            val previous = expenseRepository.getById(expense.id)
+            if (previous == null || previous.category != expense.category) {
+                learnedCategoryRepository.learn(expense.description, expense.category)
+            }
+            expenseRepository.update(expense)
+        }
     }
 
     fun deleteCapture(captureId: String) {
@@ -58,7 +71,13 @@ class ReviewViewModel(
 
     companion object {
         val Factory = viewModelFactory {
-            initializer { ReviewViewModel(ServiceLocator.expenseRepository, ServiceLocator.captureRepository) }
+            initializer {
+                ReviewViewModel(
+                    ServiceLocator.expenseRepository,
+                    ServiceLocator.captureRepository,
+                    ServiceLocator.learnedCategoryRepository
+                )
+            }
         }
     }
 }

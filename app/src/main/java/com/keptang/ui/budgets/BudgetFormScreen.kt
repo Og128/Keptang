@@ -17,6 +17,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -74,7 +75,7 @@ fun BudgetFormScreen(
         mutableStateOf(if (existing?.periodType == BudgetPeriodType.MONTHLY) existing?.periodAnchor.toString() else "1")
     }
     var weeklyAnchor by remember(existing) {
-        mutableStateOf(if (existing?.periodType == BudgetPeriodType.WEEKLY) existing?.periodAnchor ?: 1 else 1)
+        mutableIntStateOf(if (existing?.periodType == BudgetPeriodType.WEEKLY) existing?.periodAnchor ?: 1 else 1)
     }
 
     val amountMinorUnits = parseMoneyInput(amountText, settings.currencyCode)

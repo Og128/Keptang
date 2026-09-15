@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Keptang is local-first: expenses, transcripts and audio never leave the device, so neither
+    cloud backup nor device-to-device transfer is allowed to copy them off it. This is the
+    Android 12+ replacement for android:allowBackup="false" / android:fullBackupContent="false",
+    which are kept alongside it for API 26-30.
+-->
+<data-extraction-rules>
+    <cloud-backup>
+        <exclude domain="root" />
+        <exclude domain="database" />
+        <exclude domain="sharedpref" />
+        <exclude domain="file" />
+        <exclude domain="external" />
+    </cloud-backup>
+    <device-transfer>
+        <exclude domain="root" />
+        <exclude domain="database" />
+        <exclude domain="sharedpref" />
+        <exclude domain="file" />
+        <exclude domain="external" />
+    </device-transfer>
+</data-extraction-rules>

@@ -30,7 +30,8 @@ class ExpenseParser {
         transcript: String,
         captureId: String,
         referenceDateTime: ZonedDateTime,
-        languageCode: String = "en"
+        languageCode: String = "en",
+        vocabulary: CategoryVocabulary = CategoryVocabulary.EMPTY
     ): List<ParsedExpense> {
         val segments = splitIntoClauses(transcript, languageCode)
         val today: LocalDate = referenceDateTime.toLocalDate()
@@ -53,10 +54,10 @@ class ExpenseParser {
 
             val amount = AmountExtractor.extract(segment, languageCode) ?: continue
 
-            val category = CategoryRules.classify(segment, languageCode)
+            val category = CategoryRules.classify(segment, languageCode, vocabulary)
             val account = AccountExtractor.extract(segment, languageCode)
             val paymentMethod = PaymentMethodExtractor.extract(segment, languageCode)
-            val merchant = MerchantExtractor.extract(segment, languageCode)
+            val description = DescriptionExtractor.extract(segment, languageCode)
             val confidence = ConfidenceScorer.score(hasCategory = category != null)
 
             val occurredAt = currentDate
@@ -68,10 +69,10 @@ class ExpenseParser {
                 amountMinorUnits = amount.minorUnits,
                 currencyCode = amount.currencyCode,
                 occurredAt = occurredAt,
-                category = category ?: "Uncategorized",
+                category = category ?: UNCATEGORIZED,
                 account = account,
                 paymentMethod = paymentMethod,
-                merchant = merchant,
+                description = description,
                 confidence = confidence,
                 needsReview = confidence < ConfidenceScorer.AUTO_APPROVE_THRESHOLD
             )
@@ -90,8 +91,39 @@ class ExpenseParser {
             text = andRegex.replace(text, " ~SPLIT~ ")
         }
         text = commaRegex.replace(text, " ~SPLIT~ ")
-        return text.split("~SPLIT~")
+        val fragments = text.split("~SPLIT~")
             .map { it.trim(*trimChars) }
             .filter { it.isNotEmpty() }
+        return mergeFragmentsWithoutTheirOwnAmount(fragments, languageCode)
+    }
+
+    /**
+     * Re-joins fragments that a comma split apart but that describe a single expense.
+     *
+     * Speech recognisers punctuate on their own, so "Lunch 50 baht" is just as likely to arrive as
+     * "Lunch, 50 baht". Splitting that on the comma produced "Lunch" (dropped outright - no
+     * amount) plus "50 baht" (an amount with nothing describing it), which is how a perfectly
+     * clear sentence ended up as an uncategorised expense with no description.
+     *
+     * A fragment only starts a new expense if it carries an amount of its own; otherwise it is
+     * glued onto its neighbour. "550 baht for dinner, 25 baht for coffee" still splits in two,
+     * because both halves name an amount.
+     */
+    private fun mergeFragmentsWithoutTheirOwnAmount(fragments: List<String>, languageCode: String): List<String> {
+        val merged = mutableListOf<String>()
+        for (fragment in fragments) {
+            val hasAmount = AmountExtractor.extract(fragment, languageCode) != null
+            val previous = merged.lastOrNull()
+            val previousHasAmount = previous != null && AmountExtractor.extract(previous, languageCode) != null
+            when {
+                merged.isEmpty() -> merged += fragment
+                // An amount-less fragment can only describe its neighbour, never stand alone.
+                !hasAmount -> merged[merged.lastIndex] = "$previous $fragment"
+                // An amount whose neighbour has none completes that neighbour ("Lunch" + "50 baht").
+                !previousHasAmount -> merged[merged.lastIndex] = "$previous $fragment"
+                else -> merged += fragment
+            }
+        }
+        return merged
     }
 }

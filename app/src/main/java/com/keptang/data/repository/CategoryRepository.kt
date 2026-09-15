@@ -21,6 +21,9 @@ class CategoryRepository(
 
     suspend fun getByName(name: String): CategoryEntity? = categoryDao.getByName(name)
 
+    /** Feeds [com.keptang.parser.CategoryVocabulary], where each category name matches itself. */
+    suspend fun getAllNames(): List<String> = categoryDao.getAll().map { it.name }
+
     suspend fun create(name: String, colorHex: String, iconKey: String) {
         val sortOrder = (categoryDao.getAll().maxOfOrNull { it.sortOrder } ?: -1) + 1
         categoryDao.upsert(CategoryEntity(name, colorHex, iconKey, sortOrder))

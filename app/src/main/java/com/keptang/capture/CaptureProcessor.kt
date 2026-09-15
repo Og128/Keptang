@@ -3,15 +3,28 @@ package com.keptang.capture
 import com.keptang.core.Defaults
 import com.keptang.data.repository.CaptureRepository
 import com.keptang.data.repository.ExpenseRepository
+import com.keptang.parser.CategoryVocabulary
 import com.keptang.parser.ExpenseParser
+import com.keptang.parser.UNCATEGORIZED
 import com.keptang.transcription.TranscriptionProvider
 import com.keptang.transcription.TranscriptionResult
 import java.time.ZoneId
 import java.time.ZonedDateTime
 
 sealed class ProcessOutcome {
-    data class Processed(val approvedCount: Int) : ProcessOutcome()
-    data class NeedsReview(val approvedCount: Int, val reviewCount: Int) : ProcessOutcome()
+    /**
+     * [uncategorizedCount] counts saved expenses no category matched. They are perfectly valid -
+     * right amount, right date, and they count toward budgets - so they are never held back for
+     * review; the result notification just says a category is missing, which is the cheapest
+     * moment to fix it (and, via
+     * [com.keptang.data.repository.LearnedCategoryRepository], to teach the parser for next time).
+     */
+    data class Processed(val approvedCount: Int, val uncategorizedCount: Int = 0) : ProcessOutcome()
+    data class NeedsReview(
+        val approvedCount: Int,
+        val reviewCount: Int,
+        val uncategorizedCount: Int = 0
+    ) : ProcessOutcome()
     data object SavedForLater : ProcessOutcome()
     data object CouldNotUnderstand : ProcessOutcome()
     data object AlreadyProcessed : ProcessOutcome()
@@ -32,7 +45,12 @@ class CaptureProcessor(
     private val transcriptionProvider: TranscriptionProvider,
     private val expenseParser: ExpenseParser,
     private val zoneId: ZoneId = ZoneId.of(Defaults.TIME_ZONE_ID),
-    private val languageCodeProvider: () -> String = { Defaults.LANGUAGE_CODE }
+    private val languageCodeProvider: () -> String = { Defaults.LANGUAGE_CODE },
+    /**
+     * Read fresh on every parse rather than captured once: the user can create a category or
+     * correct one between two captures, and the very next sentence should already benefit.
+     */
+    private val vocabularyProvider: suspend () -> CategoryVocabulary = { CategoryVocabulary.EMPTY }
 ) {
 
     /** Used by the service right after recording, when a live [TranscriptionResult] is already in hand. */
@@ -91,7 +109,7 @@ class CaptureProcessor(
     private suspend fun finalizeSuccess(captureId: String, transcript: String): ProcessOutcome {
         captureRepository.markParsing(captureId, transcript)
         val now = ZonedDateTime.now(zoneId)
-        val parsed = expenseParser.parse(transcript, captureId, now, languageCodeProvider())
+        val parsed = expenseParser.parse(transcript, captureId, now, languageCodeProvider(), vocabularyProvider())
         expenseRepository.saveParsedExpenses(captureId, parsed)
 
         return when {
@@ -103,12 +121,16 @@ class CaptureProcessor(
                 captureRepository.markNeedsReview(captureId)
                 ProcessOutcome.NeedsReview(
                     approvedCount = parsed.count { !it.needsReview },
-                    reviewCount = parsed.count { it.needsReview }
+                    reviewCount = parsed.count { it.needsReview },
+                    uncategorizedCount = parsed.count { it.category == UNCATEGORIZED }
                 )
             }
             else -> {
                 captureRepository.markProcessed(captureId)
-                ProcessOutcome.Processed(approvedCount = parsed.size)
+                ProcessOutcome.Processed(
+                    approvedCount = parsed.size,
+                    uncategorizedCount = parsed.count { it.category == UNCATEGORIZED }
+                )
             }
         }
     }

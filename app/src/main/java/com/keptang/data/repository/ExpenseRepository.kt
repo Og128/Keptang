@@ -1,14 +1,21 @@
 package com.keptang.data.repository
 
+import androidx.room.withTransaction
+import com.keptang.data.db.CaptureDao
 import com.keptang.data.db.ExpenseDao
 import com.keptang.data.db.ExpenseEntity
+import com.keptang.data.db.KeptangDatabase
 import com.keptang.data.db.ReviewStatus
 import com.keptang.parser.ParsedExpense
 import kotlinx.coroutines.flow.Flow
 import java.time.Instant
 import java.util.UUID
 
-class ExpenseRepository(private val expenseDao: ExpenseDao) {
+class ExpenseRepository(
+    private val database: KeptangDatabase,
+    private val expenseDao: ExpenseDao,
+    private val captureDao: CaptureDao
+) {
 
     fun observeAll(): Flow<List<ExpenseEntity>> = expenseDao.observeAll()
 
@@ -45,7 +52,7 @@ class ExpenseRepository(private val expenseDao: ExpenseDao) {
                 category = p.category,
                 account = p.account,
                 paymentMethod = p.paymentMethod,
-                merchant = p.merchant,
+                description = p.description,
                 confidence = p.confidence,
                 reviewStatus = if (p.needsReview) ReviewStatus.NEEDS_REVIEW else ReviewStatus.APPROVED,
                 createdAtEpochMillis = now,
@@ -66,7 +73,7 @@ class ExpenseRepository(private val expenseDao: ExpenseDao) {
         category: String,
         account: String?,
         paymentMethod: String?,
-        merchant: String?,
+        description: String?,
         notes: String? = null,
         recurringExpenseId: String? = null
     ): ExpenseEntity {
@@ -81,7 +88,7 @@ class ExpenseRepository(private val expenseDao: ExpenseDao) {
             category = category,
             account = account,
             paymentMethod = paymentMethod,
-            merchant = merchant,
+            description = description,
             notes = notes,
             recurringExpenseId = recurringExpenseId,
             confidence = 1.0f,
@@ -101,7 +108,21 @@ class ExpenseRepository(private val expenseDao: ExpenseDao) {
         expenseDao.update(expense.copy(updatedAtEpochMillis = Instant.now().toEpochMilli()))
     }
 
-    suspend fun delete(expenseId: String) = expenseDao.deleteById(expenseId)
+    /**
+     * Deletes an expense, plus the placeholder capture behind it when that capture exists purely
+     * to host it (manual entry, quick-add widget, generated recurrence) and has no expenses left.
+     * Without this, every deleted manual expense leaves a "Manually entered" ghost row in the
+     * Inbox. Real voice captures are always kept - their transcript and audio are the user's
+     * data, not a side effect of the expense.
+     */
+    suspend fun delete(expenseId: String) = database.withTransaction {
+        val expense = expenseDao.getById(expenseId) ?: return@withTransaction
+        expenseDao.deleteById(expenseId)
+        val capture = captureDao.getById(expense.captureId)
+        if (capture != null && capture.isManual && expenseDao.getByCaptureId(capture.id).isEmpty()) {
+            captureDao.deleteById(capture.id)
+        }
+    }
 
     /** Removes every expense produced by [captureId], e.g. in response to a notification Undo action. */
     suspend fun undoForCapture(captureId: String) = expenseDao.deleteByCaptureId(captureId)

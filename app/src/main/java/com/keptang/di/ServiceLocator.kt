@@ -10,10 +10,12 @@ import com.keptang.data.repository.BudgetRepository
 import com.keptang.data.repository.CaptureRepository
 import com.keptang.data.repository.CategoryRepository
 import com.keptang.data.repository.ExpenseRepository
+import com.keptang.data.repository.LearnedCategoryRepository
 import com.keptang.data.repository.RecurringExpenseRepository
 import com.keptang.data.repository.SettingsRepository
 import com.keptang.data.repository.TagRepository
 import com.keptang.notification.NotificationHelper
+import com.keptang.parser.CategoryVocabulary
 import com.keptang.parser.ExpenseParser
 import com.keptang.recurring.RecurringExpenseGenerator
 import com.keptang.transcription.AndroidSpeechRecognitionProvider
@@ -61,7 +63,9 @@ object ServiceLocator {
         settingsRepository.settings.stateIn(appScope, SharingStarted.Eagerly, AppSettings())
     }
 
-    val expenseRepository: ExpenseRepository by lazy { ExpenseRepository(database.expenseDao()) }
+    val expenseRepository: ExpenseRepository by lazy {
+        ExpenseRepository(database, database.expenseDao(), database.captureDao())
+    }
 
     val budgetRepository: BudgetRepository by lazy { BudgetRepository(database.budgetDao()) }
 
@@ -78,6 +82,10 @@ object ServiceLocator {
     }
 
     val tagRepository: TagRepository by lazy { TagRepository(database.tagDao()) }
+
+    val learnedCategoryRepository: LearnedCategoryRepository by lazy {
+        LearnedCategoryRepository(database.learnedCategoryDao())
+    }
 
     val recurringExpenseGenerator: RecurringExpenseGenerator by lazy {
         RecurringExpenseGenerator(database, recurringExpenseRepository, captureRepository, expenseRepository)
@@ -112,7 +120,13 @@ object ServiceLocator {
             expenseRepository,
             transcriptionProvider,
             expenseParser,
-            languageCodeProvider = { currentSettings.value.languageCode }
+            languageCodeProvider = { currentSettings.value.languageCode },
+            vocabularyProvider = {
+                CategoryVocabulary(
+                    learned = learnedCategoryRepository.asVocabulary(),
+                    categoryNames = categoryRepository.getAllNames()
+                )
+            }
         )
     }
 }

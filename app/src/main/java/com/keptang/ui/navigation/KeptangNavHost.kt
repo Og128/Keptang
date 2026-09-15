@@ -87,7 +87,11 @@ private val BOTTOM_TABS = listOf(
 )
 
 @Composable
-fun KeptangNavHost(navController: NavHostController = rememberNavController(), startCaptureId: String? = null) {
+fun KeptangNavHost(
+    navController: NavHostController = rememberNavController(),
+    startCaptureId: String? = null,
+    onStartCaptureConsumed: () -> Unit = {}
+) {
     val backStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = backStackEntry?.destination?.route
 
@@ -223,6 +227,7 @@ fun KeptangNavHost(navController: NavHostController = rememberNavController(), s
     LaunchedEffect(startCaptureId) {
         if (startCaptureId != null) {
             navController.navigate(Routes.captureDetail(startCaptureId))
+            onStartCaptureConsumed()
         }
     }
 }
