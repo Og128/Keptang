@@ -4,14 +4,13 @@
     android:layout_height="match_parent">
 
     <ImageButton
-        android:id="@+id/widget_quick_add_button"
+        android:id="@+id/widget_pair_button"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:layout_gravity="center"
         android:background="@android:color/transparent"
-        android:contentDescription="@string/quick_add_widget_description"
-        android:padding="4dp"
+        android:contentDescription="@string/widget_mic_description"
         android:scaleType="fitCenter"
-        android:src="@drawable/widget_add_expense" />
+        android:src="@drawable/widget_pair_talk_1" />
 
 </FrameLayout>

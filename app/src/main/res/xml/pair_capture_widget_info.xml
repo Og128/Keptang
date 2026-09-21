@@ -2,12 +2,12 @@
 <appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android"
     android:minWidth="180dp"
     android:minHeight="110dp"
-    android:minResizeWidth="40dp"
-    android:minResizeHeight="40dp"
+    android:minResizeWidth="140dp"
+    android:minResizeHeight="80dp"
     android:targetCellWidth="3"
     android:targetCellHeight="2"
     android:updatePeriodMillis="0"
-    android:initialLayout="@layout/widget_quick_add"
+    android:initialLayout="@layout/widget_pair_capture"
     android:resizeMode="horizontal|vertical"
     android:widgetCategory="home_screen"
-    android:previewImage="@drawable/widget_add_expense" />
+    android:previewImage="@drawable/widget_pair_talk_1" />

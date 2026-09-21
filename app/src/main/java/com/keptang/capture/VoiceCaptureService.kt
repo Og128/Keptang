@@ -17,6 +17,7 @@ import com.keptang.core.Defaults
 import com.keptang.di.ServiceLocator
 import com.keptang.notification.NotificationIds
 import com.keptang.transcription.TranscriptionResult
+import com.keptang.widget.PairCaptureWidgetProvider
 import com.keptang.widget.VoiceCaptureWidgetProvider
 import com.keptang.widget.WidgetMascot
 import kotlinx.coroutines.CoroutineScope
@@ -169,10 +170,14 @@ class VoiceCaptureService : Service() {
     private fun startWidgetAnimation() {
         widgetAnimationJob = serviceScope.launch {
             val mascot = WidgetMascot.current(applicationContext)
-            val frames = listOf(mascot.mouthClosed, mascot.mouthOpen)
+            val soloFrames = listOf(mascot.mouthClosed, mascot.mouthOpen)
             var frameIndex = 0
             while (isActive) {
-                VoiceCaptureWidgetProvider.updateAllWidgets(applicationContext, frames[frameIndex % frames.size])
+                // Both voice widgets animate off one clock, but they have different frame counts
+                // (two mouth positions against the pair's three), so each wraps the shared index
+                // at its own length rather than being handed a drawable that may not be its own.
+                VoiceCaptureWidgetProvider.updateAllWidgets(applicationContext, soloFrames[frameIndex % soloFrames.size])
+                PairCaptureWidgetProvider.showFrame(applicationContext, frameIndex)
                 frameIndex++
                 delay(WIDGET_ANIMATION_FRAME_MILLIS)
             }
@@ -185,6 +190,7 @@ class VoiceCaptureService : Service() {
         // Resolving the mascot suspends, so the reset runs on the app scope rather than this
         // service's: serviceScope is cancelled moments later in onDestroy, and the widget would
         // be left frozen on whichever mouth frame the animation stopped on.
+        PairCaptureWidgetProvider.showResting(applicationContext)
         ServiceLocator.appScope.launch {
             VoiceCaptureWidgetProvider.refreshMascot(applicationContext)
         }

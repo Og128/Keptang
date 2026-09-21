@@ -61,6 +61,18 @@
         </receiver>
 
         <receiver
+            android:name=".widget.PairCaptureWidgetProvider"
+            android:exported="true"
+            android:label="@string/widget_pair_label">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/pair_capture_widget_info" />
+        </receiver>
+
+        <receiver
             android:name=".widget.QuickAddWidgetProvider"
             android:exported="true"
             android:label="@string/quick_add_widget_label">

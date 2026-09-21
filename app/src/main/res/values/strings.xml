@@ -3,6 +3,7 @@
     <string name="app_name">Keptang</string>
     <string name="widget_label">Keptang Voice Capture</string>
     <string name="widget_mic_description">Tap to record an expense</string>
+    <string name="widget_pair_label">Keptang Duo</string>
     <string name="quick_add_widget_label">Keptang Quick Add</string>
     <string name="quick_add_widget_description">Type a quick expense</string>
     <string name="quick_add_title">Quick add</string>
