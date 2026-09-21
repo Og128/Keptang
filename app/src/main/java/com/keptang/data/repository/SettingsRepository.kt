@@ -11,9 +11,34 @@ import kotlinx.coroutines.flow.map
 
 private val Context.dataStore by preferencesDataStore(name = "keptang_settings")
 
-/** A selectable app-wide color palette, set in Settings. See [com.keptang.ui.theme.KeptangTheme]. */
+/**
+ * The app's palette, chosen in Settings. Each theme belongs to one of the two mascots and takes
+ * its colours from that animal's own artwork. See [com.keptang.ui.theme.KeptangTheme].
+ */
 enum class ColorTheme {
-    DEFAULT, DARK, LIGHT, AMOLED
+    /** Follows the system setting: the cat by day, the chihuahua by night. */
+    SYSTEM,
+
+    /** The cat: cream ground, a committed apricot field, ink rules. */
+    CAT,
+
+    /** The chihuahua: near-black ground, bone ink. */
+    DOG;
+
+    companion object {
+        /**
+         * Settings persist the theme by name, so every install predating the mascot themes still
+         * has one of the four old scheme names on disk. Mapping them keeps someone who had chosen
+         * a dark scheme on a dark one, rather than silently resetting them to [SYSTEM].
+         */
+        fun parse(stored: String?): ColorTheme = when (stored) {
+            null -> SYSTEM
+            "LIGHT" -> CAT
+            "DARK", "AMOLED" -> DOG
+            "DEFAULT" -> SYSTEM
+            else -> entries.firstOrNull { it.name == stored } ?: SYSTEM
+        }
+    }
 }
 
 /** One customizable block on the Dashboard. See [com.keptang.ui.dashboard.DashboardScreen]. */
@@ -48,7 +73,7 @@ data class AppSettings(
     val defaultAccount: String = Defaults.DEFAULT_ACCOUNT,
     val audioRetentionDays: Int = Defaults.AUDIO_RETENTION_DAYS,
     val languageCode: String = Defaults.LANGUAGE_CODE,
-    val colorTheme: ColorTheme = ColorTheme.DEFAULT,
+    val colorTheme: ColorTheme = ColorTheme.SYSTEM,
     val firstRunCompleted: Boolean = false,
     /** Visible dashboard cards, in display order. A card absent from this list is hidden. */
     val dashboardCardOrder: List<DashboardCard> = DashboardCard.entries
@@ -76,8 +101,7 @@ class SettingsRepository(private val context: Context) {
             defaultAccount = prefs[Keys.ACCOUNT] ?: Defaults.DEFAULT_ACCOUNT,
             audioRetentionDays = prefs[Keys.RETENTION_DAYS] ?: Defaults.AUDIO_RETENTION_DAYS,
             languageCode = prefs[Keys.LANGUAGE] ?: Defaults.LANGUAGE_CODE,
-            colorTheme = prefs[Keys.COLOR_THEME]?.let { name -> runCatching { ColorTheme.valueOf(name) }.getOrNull() }
-                ?: ColorTheme.DEFAULT,
+            colorTheme = ColorTheme.parse(prefs[Keys.COLOR_THEME]),
             firstRunCompleted = prefs[Keys.FIRST_RUN] == "true",
             dashboardCardOrder = decodeDashboardCards(prefs[Keys.DASHBOARD_CARDS])
         )

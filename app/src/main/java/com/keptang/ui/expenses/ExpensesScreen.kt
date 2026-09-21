@@ -52,6 +52,8 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.keptang.ui.theme.MascotRole
+import com.keptang.ui.theme.mascotFor
 import com.keptang.R
 import com.keptang.data.db.CategoryEntity
 import com.keptang.data.db.ExpenseEntity
@@ -98,7 +100,7 @@ fun ExpensesScreen(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Image(
-                painter = painterResource(R.drawable.m_reading),
+                painter = painterResource(mascotFor(MascotRole.READING)),
                 contentDescription = stringResource(R.string.nav_expenses),
                 modifier = Modifier.height(56.dp),
                 alignment = Alignment.CenterStart,

@@ -90,10 +90,9 @@
     <string name="settings_debug_label">Debug</string>
     <string name="settings_seed_demo_data_button">Seed 50 demo expenses</string>
     <string name="settings_color_theme_label">Color theme</string>
-    <string name="settings_color_theme_default">Default</string>
-    <string name="settings_color_theme_dark">Dark</string>
-    <string name="settings_color_theme_light">Light</string>
-    <string name="settings_color_theme_amoled">AMOLED</string>
+    <string name="settings_color_theme_system">System</string>
+    <string name="settings_color_theme_dog">Chihuahua</string>
+    <string name="settings_color_theme_cat">Cat</string>
     <string name="settings_language_label">Language</string>
     <!-- Language names are always shown as endonyms (each language names itself), never
          translated - so these two keys are deliberately identical in every values-*/strings.xml. -->

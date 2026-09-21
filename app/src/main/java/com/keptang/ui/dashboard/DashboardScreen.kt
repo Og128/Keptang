@@ -80,6 +80,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.keptang.ui.theme.MascotRole
+import com.keptang.ui.theme.mascotFor
 import com.keptang.R
 import com.keptang.budget.BudgetSnapshot
 import com.keptang.dashboard.DashboardFilter
@@ -118,7 +120,7 @@ fun DashboardScreen(
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp)) {
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
             Image(
-                painter = painterResource(R.drawable.m_relaxed),
+                painter = painterResource(mascotFor(MascotRole.RELAXED)),
                 contentDescription = stringResource(R.string.nav_dashboard),
                 modifier = Modifier.weight(1f).height(56.dp),
                 alignment = Alignment.CenterStart,

@@ -78,6 +78,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.keptang.ui.theme.MascotRole
+import com.keptang.ui.theme.mascotFor
 import com.keptang.R
 import com.keptang.data.db.BudgetPeriodType
 import com.keptang.ui.budgets.weekdayLabelRes
@@ -254,7 +256,7 @@ fun ManualExpenseScreen(
                         modifier = Modifier.width(MODE_CHIP_MAX_WIDTH)
                     )
                     Image(
-                        painter = painterResource(R.drawable.m_expense),
+                        painter = painterResource(mascotFor(MascotRole.EXPENSE)),
                         contentDescription = null,
                         modifier = Modifier.height(120.dp),
                         contentScale = ContentScale.Fit

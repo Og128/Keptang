@@ -1,5 +1,8 @@
 package com.keptang.ui.settings
 
+import androidx.compose.foundation.border
+import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -18,6 +21,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowDropDown
+import androidx.compose.material.icons.filled.Contrast
 import androidx.compose.material3.Badge
 import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.Button
@@ -38,6 +42,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
@@ -46,12 +52,15 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.keptang.ui.theme.MascotRole
+import com.keptang.ui.theme.mascotFor
 import com.keptang.BuildConfig
 import com.keptang.R
 import com.keptang.core.Defaults
 import com.keptang.data.repository.ColorTheme
 import com.keptang.di.ServiceLocator
 import com.keptang.ui.common.InfoCard
+import com.keptang.ui.theme.MascotOutlineWidth
 
 @Composable
 fun SettingsScreen(
@@ -67,7 +76,7 @@ fun SettingsScreen(
 
     Column(Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(16.dp)) {
         Image(
-            painter = painterResource(R.drawable.m_settings),
+            painter = painterResource(mascotFor(MascotRole.SETTINGS)),
             contentDescription = stringResource(R.string.settings_title),
             modifier = Modifier.height(56.dp),
             alignment = Alignment.CenterStart,
@@ -112,25 +121,26 @@ fun SettingsScreen(
                 Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).padding(top = 8.dp),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                FilterChip(
-                    selected = settings.colorTheme == ColorTheme.DEFAULT,
-                    onClick = { viewModel.setColorTheme(ColorTheme.DEFAULT) },
-                    label = { Text(stringResource(R.string.settings_color_theme_default)) }
+                ThemeChoice(
+                    theme = ColorTheme.CAT,
+                    selected = settings.colorTheme == ColorTheme.CAT,
+                    mascot = R.drawable.widget_closed_cat,
+                    label = stringResource(R.string.settings_color_theme_cat),
+                    onClick = { viewModel.setColorTheme(ColorTheme.CAT) }
                 )
-                FilterChip(
-                    selected = settings.colorTheme == ColorTheme.DARK,
-                    onClick = { viewModel.setColorTheme(ColorTheme.DARK) },
-                    label = { Text(stringResource(R.string.settings_color_theme_dark)) }
+                ThemeChoice(
+                    theme = ColorTheme.DOG,
+                    selected = settings.colorTheme == ColorTheme.DOG,
+                    mascot = R.drawable.widget_mic_blanc,
+                    label = stringResource(R.string.settings_color_theme_dog),
+                    onClick = { viewModel.setColorTheme(ColorTheme.DOG) }
                 )
-                FilterChip(
-                    selected = settings.colorTheme == ColorTheme.LIGHT,
-                    onClick = { viewModel.setColorTheme(ColorTheme.LIGHT) },
-                    label = { Text(stringResource(R.string.settings_color_theme_light)) }
-                )
-                FilterChip(
-                    selected = settings.colorTheme == ColorTheme.AMOLED,
-                    onClick = { viewModel.setColorTheme(ColorTheme.AMOLED) },
-                    label = { Text(stringResource(R.string.settings_color_theme_amoled)) }
+                ThemeChoice(
+                    theme = ColorTheme.SYSTEM,
+                    selected = settings.colorTheme == ColorTheme.SYSTEM,
+                    mascot = null,
+                    label = stringResource(R.string.settings_color_theme_system),
+                    onClick = { viewModel.setColorTheme(ColorTheme.SYSTEM) }
                 )
             }
 
@@ -303,5 +313,51 @@ private fun SettingsDropdown(
                 )
             }
         }
+    }
+}
+
+/**
+ * One theme option, showing the animal whose artwork the palette was sampled from. The mascot is
+ * the point of the choice, so it is the thing you tap - a text chip would make the two schemes
+ * look interchangeable when they are the whole identity.
+ */
+@Composable
+private fun ThemeChoice(
+    theme: ColorTheme,
+    selected: Boolean,
+    mascot: Int?,
+    label: String,
+    onClick: () -> Unit
+) {
+    val border = if (selected) MascotOutlineWidth else 1.dp
+    val borderColor = if (selected) MaterialTheme.colorScheme.outline else MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f)
+    Column(
+        modifier = Modifier
+            .width(96.dp)
+            .clip(MaterialTheme.shapes.medium)
+            .border(border, borderColor, MaterialTheme.shapes.medium)
+            .background(if (selected) MaterialTheme.colorScheme.secondaryContainer else Color.Transparent)
+            .selectable(selected = selected, role = Role.RadioButton, onClick = onClick)
+            .padding(vertical = 10.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        if (mascot != null) {
+            Image(
+                painter = painterResource(mascot),
+                contentDescription = null,
+                modifier = Modifier.size(48.dp)
+            )
+        } else {
+            Icon(
+                Icons.Filled.Contrast,
+                contentDescription = null,
+                modifier = Modifier.size(48.dp).padding(8.dp)
+            )
+        }
+        Text(
+            label,
+            style = MaterialTheme.typography.labelLarge,
+            modifier = Modifier.padding(top = 6.dp)
+        )
     }
 }

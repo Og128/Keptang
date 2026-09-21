@@ -30,7 +30,10 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -54,6 +57,7 @@ import com.keptang.ui.expenses.ManualExpenseScreen
 import com.keptang.ui.expenses.RecurringExpenseFormScreen
 import com.keptang.ui.inbox.InboxScreen
 import com.keptang.ui.settings.SettingsScreen
+import com.keptang.ui.theme.MascotOutlineWidth
 
 object Routes {
     const val INBOX = "inbox?tab={tab}"
@@ -242,8 +246,25 @@ private fun KeptangBottomBar(currentRoute: String?, onNavigate: (String) -> Unit
     val rightTabs = BOTTOM_TABS.drop(2)
     val attentionCount by com.keptang.di.ServiceLocator.attentionCount.collectAsStateWithLifecycle()
 
+    val outlineColor = MaterialTheme.colorScheme.outline
+    val ruleWidthPx = with(LocalDensity.current) { MascotOutlineWidth.toPx() }
+
     Box(Modifier.fillMaxWidth()) {
-        Surface(tonalElevation = 3.dp, modifier = Modifier.fillMaxWidth()) {
+        // A flat surface closed by an ink rule, not a tonal step: the mascots are line art, so
+        // separation in this app is always a drawn line rather than a shade of the background.
+        Surface(
+            color = MaterialTheme.colorScheme.background,
+            modifier = Modifier
+                .fillMaxWidth()
+                .drawBehind {
+                    drawLine(
+                        color = outlineColor,
+                        start = Offset(0f, 0f),
+                        end = Offset(size.width, 0f),
+                        strokeWidth = ruleWidthPx
+                    )
+                }
+        ) {
             // Edge-to-edge puts the gesture bar under this Surface. Padding inside the bar rather
             // than around it also keeps Scaffold's bottom content padding correct, since that is
             // measured from the bar's full height.
