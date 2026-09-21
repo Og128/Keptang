@@ -3,6 +3,7 @@ package com.keptang.ui.budgets
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -67,16 +68,22 @@ fun BudgetsScreen(
             Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Image(
-                painter = painterResource(if (isOverBudget) R.drawable.m_concerned else R.drawable.m_relaxed),
-                contentDescription = stringResource(R.string.nav_budgets),
-                modifier = Modifier.weight(1f).height(56.dp),
-                alignment = Alignment.CenterStart,
-                contentScale = ContentScale.Fit
+            Text(
+                stringResource(R.string.nav_budgets),
+                style = MaterialTheme.typography.headlineMedium,
+                modifier = Modifier.weight(1f)
             )
             IconButton(onClick = onAddBudget) {
                 Icon(Icons.Filled.Add, contentDescription = stringResource(R.string.budget_add_title))
             }
+            Image(
+                painter = painterResource(
+                    mascotFor(if (isOverBudget) MascotRole.CONCERNED else MascotRole.RELAXED)
+                ),
+                contentDescription = null,
+                modifier = Modifier.size(64.dp),
+                contentScale = ContentScale.Fit
+            )
         }
 
         val overall = snapshot.overall

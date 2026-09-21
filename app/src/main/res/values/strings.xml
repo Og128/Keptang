@@ -158,6 +158,9 @@
     <string name="manual_delete_expense_confirm_message">This can\'t be undone.</string>
 
     <string name="budgets_other_label">Other</string>
+    <string name="budget_of_limit">of %1$s</string>
+    <string name="budget_amount_left">%1$s left</string>
+    <string name="budget_amount_over">%1$s over</string>
     <string name="budgets_overview_label">Overview</string>
     <string name="budgets_breakdown_label">Breakdown</string>
     <string name="budgets_current_expenses_label">Current Expenses</string>

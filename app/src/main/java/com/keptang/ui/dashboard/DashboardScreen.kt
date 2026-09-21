@@ -46,6 +46,7 @@ import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -504,7 +505,17 @@ private fun BudgetSection(budgetSnapshot: BudgetSnapshot, categoryColors: Map<St
                 spentMinorUnits = standing.spentMinorUnits,
                 limitMinorUnits = standing.budget.amountMinorUnits,
                 currencyCode = budgetSnapshot.defaultCurrencyCode,
-                fill = MaterialTheme.colorScheme.primary
+                fill = MaterialTheme.colorScheme.primary,
+                lead = true
+            )
+        }
+
+        // The overall budget answers a different question from the per-category ones, so a rule
+        // separates them rather than letting six identical bars read as one undifferentiated list.
+        if (overall != null && budgetSnapshot.categories.isNotEmpty()) {
+            HorizontalDivider(
+                color = MaterialTheme.colorScheme.outline.copy(alpha = 0.2f),
+                modifier = Modifier.padding(vertical = 6.dp)
             )
         }
 
@@ -542,33 +553,45 @@ private fun BudgetMeasure(
     spentMinorUnits: Long,
     limitMinorUnits: Long,
     currencyCode: String,
-    fill: Color
+    fill: Color,
+    lead: Boolean = false
 ) {
     val fraction = if (limitMinorUnits <= 0L) 0f else (spentMinorUnits.toFloat() / limitMinorUnits).coerceIn(0f, 1f)
     val animated by animateFloatAsState(fraction, tween(BUDGET_FILL_MILLIS), label = "budget")
     val over = spentMinorUnits > limitMinorUnits
-    val remaining = limitMinorUnits - spentMinorUnits
+    val left = limitMinorUnits - spentMinorUnits
 
-    Column(Modifier.fillMaxWidth().padding(vertical = 10.dp)) {
-        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-            Text(
-                label,
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.weight(1f)
-            )
+    Column(Modifier.fillMaxWidth().padding(vertical = if (lead) 12.dp else 10.dp)) {
+        Text(
+            label,
+            style = if (lead) MaterialTheme.typography.titleMedium else MaterialTheme.typography.titleSmall
+        )
+
+        // Spent of limit, spelled out. The bar alone cannot say which number it is filling
+        // towards, and a lone figure beside it is read as whichever one the viewer expected.
+        Row(
+            Modifier.fillMaxWidth().padding(top = 2.dp),
+            verticalAlignment = Alignment.Bottom
+        ) {
             MoneyText(
-                amountMinorUnits = if (over) -remaining else remaining,
+                amountMinorUnits = spentMinorUnits,
                 currencyCode = currencyCode,
-                style = MaterialTheme.typography.titleSmall,
+                style = if (lead) MaterialTheme.typography.headlineSmall else MaterialTheme.typography.titleMedium,
                 animate = true
             )
+            Text(
+                stringResource(R.string.budget_of_limit, formatMoney(limitMinorUnits, currencyCode)),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(start = 6.dp, bottom = 2.dp)
+            )
         }
+
         Box(
             Modifier
                 .fillMaxWidth()
-                .padding(top = 6.dp)
-                .height(BUDGET_TRACK_HEIGHT)
+                .padding(top = 8.dp)
+                .height(if (lead) BUDGET_TRACK_HEIGHT_LEAD else BUDGET_TRACK_HEIGHT)
                 .clip(MaterialTheme.shapes.extraSmall)
                 .background(MaterialTheme.colorScheme.outline.copy(alpha = 0.12f))
                 .border(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.35f), MaterialTheme.shapes.extraSmall)
@@ -580,10 +603,23 @@ private fun BudgetMeasure(
                     .background(if (over) MaterialTheme.colorScheme.error else fill)
             )
         }
+
+        // The outcome in words, because "left" and "over" are the two things being asked and a
+        // signed number does not say which of them it is.
+        Text(
+            stringResource(
+                if (over) R.string.budget_amount_over else R.string.budget_amount_left,
+                formatMoney(if (over) -left else left, currencyCode)
+            ),
+            style = MaterialTheme.typography.labelLarge,
+            color = if (over) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(top = 6.dp)
+        )
     }
 }
 
-private val BUDGET_TRACK_HEIGHT = 14.dp
+private val BUDGET_TRACK_HEIGHT = 10.dp
+private val BUDGET_TRACK_HEIGHT_LEAD = 16.dp
 private const val BUDGET_FILL_MILLIS = 650
 
 /** A ring split into colored arcs, drawn from -90deg (top) clockwise, with arbitrary center content. Shared by [BudgetDonut] (partial fill, headroom left as track) and [SpendingDonut] (always fully filled, a plain pie). */
