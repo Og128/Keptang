@@ -45,7 +45,7 @@
         <service
             android:name=".capture.VoiceCaptureService"
             android:exported="false"
-            android:foregroundServiceType="microphone" />
+            android:foregroundServiceType="microphone|shortService" />
 
         <receiver
             android:name=".widget.VoiceCaptureWidgetProvider"

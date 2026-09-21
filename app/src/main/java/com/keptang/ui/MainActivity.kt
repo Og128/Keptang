@@ -3,8 +3,10 @@ package com.keptang.ui
 import android.Manifest
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.net.Uri
 import android.os.Build
 import android.os.Bundle
+import android.provider.Settings
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
@@ -44,9 +46,16 @@ class MainActivity : ComponentActivity() {
      */
     private var startCaptureId by mutableStateOf<String?>(null)
 
+    /**
+     * Set when the user taps the "microphone permission needed" notification the widget posts
+     * when it cannot record. Held as state for the same `singleTask` reason as [startCaptureId].
+     */
+    private var micPermissionRequested by mutableStateOf(false)
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         startCaptureId = intent.getStringExtra(EXTRA_OPEN_CAPTURE_ID)
+        micPermissionRequested = intent.getBooleanExtra(EXTRA_REQUEST_MIC_PERMISSION, false)
 
         setContent {
             val settings by ServiceLocator.settingsRepository.settings
@@ -58,7 +67,22 @@ class MainActivity : ComponentActivity() {
 
                 val permissionLauncher = rememberLauncherForActivityResult(
                     ActivityResultContracts.RequestMultiplePermissions()
-                ) { results -> micGranted = results[Manifest.permission.RECORD_AUDIO] == true }
+                ) { results ->
+                    micGranted = results[Manifest.permission.RECORD_AUDIO] == true
+                    // Once the user has denied twice, the system dialog stops appearing at all
+                    // and returns "denied" instantly. Sending them to the app's settings page is
+                    // then the only way left to turn the microphone back on.
+                    if (!micGranted && !shouldShowRequestPermissionRationale(Manifest.permission.RECORD_AUDIO)) {
+                        openAppSettings()
+                    }
+                }
+
+                LaunchedEffect(micPermissionRequested) {
+                    if (micPermissionRequested) {
+                        micPermissionRequested = false
+                        if (!hasMicPermission()) permissionLauncher.launch(requiredPermissions())
+                    }
+                }
 
                 LaunchedEffect(Unit) {
                     val currentSettings = ServiceLocator.settingsRepository.settings.first()
@@ -93,6 +117,16 @@ class MainActivity : ComponentActivity() {
         super.onNewIntent(intent)
         setIntent(intent)
         intent.getStringExtra(EXTRA_OPEN_CAPTURE_ID)?.let { startCaptureId = it }
+        if (intent.getBooleanExtra(EXTRA_REQUEST_MIC_PERMISSION, false)) micPermissionRequested = true
+    }
+
+    private fun openAppSettings() {
+        startActivity(
+            Intent(
+                Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+                Uri.fromParts("package", packageName, null)
+            )
+        )
     }
 
     private fun requiredPermissions(): Array<String> {
@@ -105,5 +139,6 @@ class MainActivity : ComponentActivity() {
 
     companion object {
         const val EXTRA_OPEN_CAPTURE_ID = "extra_open_capture_id"
+        const val EXTRA_REQUEST_MIC_PERMISSION = "extra_request_mic_permission"
     }
 }

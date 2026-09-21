@@ -13,6 +13,7 @@ import com.keptang.ui.MainActivity
 
 object NotificationIds {
     const val RECORDING = 1001
+    const val MIC_PERMISSION = 1002
     const val RESULT_BASE = 2000
 }
 
@@ -77,13 +78,26 @@ class NotificationHelper(private val context: Context) {
                 PendingIntent.getActivity(
                     context,
                     0,
+                    // Onboarding is the only place that ever asks for the microphone, and it is
+                    // behind a one-shot "first run done" flag, so opening the app plain would
+                    // leave the user with no way back to the system dialog. The extra makes
+                    // MainActivity re-ask.
                     Intent(context, MainActivity::class.java).apply {
                         flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+                        putExtra(MainActivity.EXTRA_REQUEST_MIC_PERMISSION, true)
                     },
                     PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
                 )
             )
             .build()
+    }
+
+    /**
+     * Posted under its own id, not as the bailing-out service's foreground notification, which
+     * is removed the instant that service stops.
+     */
+    fun notifyMicPermissionRequired() {
+        manager.notify(NotificationIds.MIC_PERMISSION, buildPermissionRequiredNotification())
     }
 
     /**

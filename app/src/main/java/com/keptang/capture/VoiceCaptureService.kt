@@ -63,26 +63,19 @@ class VoiceCaptureService : Service() {
         val hasMicPermission = ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) ==
             PackageManager.PERMISSION_GRANTED
 
-        // Context.startForegroundService() (used by the widget's PendingIntent) obligates us to
-        // call startForeground() promptly regardless of outcome, so this still happens even when
-        // we're about to immediately bail out for a missing permission.
-        val notification = if (hasMicPermission) {
-            ServiceLocator.notificationHelper.buildRecordingNotification(captureId)
-        } else {
-            ServiceLocator.notificationHelper.buildPermissionRequiredNotification()
+        if (!hasMicPermission) {
+            bailOutForMissingPermission()
+            return
         }
+
+        // Context.startForegroundService() (used by the widget's PendingIntent) obligates us to
+        // call startForeground() promptly.
         ServiceCompat.startForeground(
             this,
             NotificationIds.RECORDING,
-            notification,
+            ServiceLocator.notificationHelper.buildRecordingNotification(captureId),
             ServiceInfo.FOREGROUND_SERVICE_TYPE_MICROPHONE
         )
-
-        if (!hasMicPermission) {
-            isRecording = false
-            finishService()
-            return
-        }
 
         vibrateFeedback()
         startWidgetAnimation()
@@ -132,6 +125,35 @@ class VoiceCaptureService : Service() {
 
             finishService()
         }
+    }
+
+    /**
+     * The widget cannot ask for a runtime permission itself, so a tap with the microphone
+     * permission missing (revoked in Settings, or a "only this time" grant that has since
+     * expired) can only point the user at the app. Two things have to be right here:
+     *
+     * - we still owe `startForeground()` a prompt call, because the widget's PendingIntent used
+     *   `startForegroundService()` - but *not* with the microphone type. Android 14 validates
+     *   that type against RECORD_AUDIO and throws `SecurityException` when it is missing, which
+     *   is precisely the crash this bail-out exists to avoid. `shortService` needs no permission.
+     * - the prompt is posted as its own notification rather than as the foreground one, since
+     *   [finishService] tears that one down with STOP_FOREGROUND_REMOVE a moment later and the
+     *   user would never see it.
+     */
+    private fun bailOutForMissingPermission() {
+        val type = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+            ServiceInfo.FOREGROUND_SERVICE_TYPE_SHORT_SERVICE
+        } else {
+            0
+        }
+        ServiceCompat.startForeground(
+            this,
+            NotificationIds.RECORDING,
+            ServiceLocator.notificationHelper.buildPermissionRequiredNotification(),
+            type
+        )
+        ServiceLocator.notificationHelper.notifyMicPermissionRequired()
+        finishService()
     }
 
     private fun finishService() {
