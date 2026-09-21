@@ -177,6 +177,11 @@ fun KeptangTheme(
     }
 
     CompositionLocalProvider(LocalIsDogTheme provides dog) {
-        MaterialTheme(colorScheme = colorScheme, shapes = MascotShapes, content = content)
+        MaterialTheme(
+            colorScheme = colorScheme,
+            shapes = MascotShapes,
+            typography = KeptangTypography,
+            content = content
+        )
     }
 }

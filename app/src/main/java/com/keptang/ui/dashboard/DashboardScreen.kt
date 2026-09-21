@@ -7,6 +7,7 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
 import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -80,13 +81,16 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.keptang.ui.theme.MascotOutlineWidth
 import com.keptang.ui.theme.MascotRole
+import com.keptang.ui.theme.TabularFigures
 import com.keptang.ui.theme.mascotFor
 import com.keptang.R
 import com.keptang.budget.BudgetSnapshot
 import com.keptang.dashboard.DashboardFilter
 import com.keptang.data.repository.DashboardCard
 import com.keptang.ui.common.formatCurrencyExclusionNotice
+import com.keptang.ui.common.MoneyText
 import com.keptang.ui.common.formatMoney
 import com.keptang.ui.common.formatPeriodRange
 import com.keptang.ui.expenses.ExpenseCard
@@ -117,15 +121,25 @@ fun DashboardScreen(
     val categoriesByName = categories.associateBy { it.name }
     var customizing by remember { mutableStateOf(false) }
 
+    // The mascot answers the screen instead of decorating it: it lies down when nothing needs
+    // doing, and sits up concerned the moment a budget is over or captures are waiting.
+    val overBudget = (listOfNotNull(budgetSnapshot.overall) + budgetSnapshot.categories)
+        .any { standing -> standing.spentMinorUnits > standing.budget.amountMinorUnits }
+    val mascotRole = if (attentionCount > 0 || overBudget) MascotRole.CONCERNED else MascotRole.RELAXED
+
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp)) {
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-            Image(
-                painter = painterResource(mascotFor(MascotRole.RELAXED)),
-                contentDescription = stringResource(R.string.nav_dashboard),
-                modifier = Modifier.weight(1f).height(56.dp),
-                alignment = Alignment.CenterStart,
-                contentScale = ContentScale.Fit
-            )
+            Column(Modifier.weight(1f)) {
+                Text(
+                    stringResource(R.string.nav_dashboard),
+                    style = MaterialTheme.typography.headlineMedium
+                )
+                Text(
+                    stringResource(dashboardCardLabel(DashboardCard.SPENDING)),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                )
+            }
             IconButton(onClick = { customizing = true }) {
                 Icon(Icons.Filled.Tune, contentDescription = stringResource(R.string.dashboard_customize_action))
             }
@@ -136,6 +150,12 @@ fun DashboardScreen(
                     }
                 }
             }
+            Image(
+                painter = painterResource(mascotFor(mascotRole)),
+                contentDescription = null,
+                modifier = Modifier.size(64.dp),
+                contentScale = ContentScale.Fit
+            )
         }
 
         if (attentionCount > 0) {
@@ -198,7 +218,9 @@ private fun SpendingCard(
     categoryColors: Map<String, Color>,
     onSetFilter: (DashboardFilter) -> Unit
 ) {
-    DashboardSection(modifier = modifier) {
+    // The one apricot field on the screen: the period total is what the user opened the app for,
+    // and the colour is spent there rather than spread thin across every card.
+    DashboardSection(modifier = modifier, containerColor = MaterialTheme.colorScheme.surfaceVariant) {
         Text(stringResource(R.string.dashboard_spending_label), style = MaterialTheme.typography.titleMedium)
 
         Row(
@@ -242,29 +264,25 @@ private fun SpendingCard(
             Column(Modifier.weight(1f)) {
                 Text(
                     stringResource(R.string.dashboard_total_label),
-                    style = MaterialTheme.typography.labelLarge,
+                    style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
-                Text(
-                    formatMoney(snapshot.totalMinorUnits, snapshot.defaultCurrencyCode),
-                    style = MaterialTheme.typography.headlineMedium,
-                    fontWeight = FontWeight.Bold
+                MoneyText(
+                    amountMinorUnits = snapshot.totalMinorUnits,
+                    currencyCode = snapshot.defaultCurrencyCode,
+                    style = MaterialTheme.typography.displaySmall,
+                    animate = true
                 )
             }
-            VerticalDivider(
-                modifier = Modifier.padding(horizontal = 16.dp).height(36.dp),
-                color = MaterialTheme.colorScheme.outlineVariant
-            )
-            Column(Modifier.weight(1f), horizontalAlignment = Alignment.End) {
+            Column(horizontalAlignment = Alignment.End) {
                 Text(
                     stringResource(R.string.dashboard_transactions_label),
-                    style = MaterialTheme.typography.labelLarge,
+                    style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 Text(
                     snapshot.transactionCount.toString(),
-                    style = MaterialTheme.typography.headlineMedium,
-                    fontWeight = FontWeight.Bold
+                    style = MaterialTheme.typography.headlineSmall.merge(TabularFigures)
                 )
             }
         }
@@ -391,14 +409,16 @@ private fun DashboardCustomizeDialog(
 @Composable
 private fun DashboardSection(
     modifier: Modifier = Modifier,
-    contentPadding: PaddingValues = PaddingValues(16.dp),
+    contentPadding: PaddingValues = PaddingValues(20.dp),
+    containerColor: Color = MaterialTheme.colorScheme.surfaceContainerLow,
     content: @Composable ColumnScope.() -> Unit
 ) {
     Card(
         modifier = modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
-        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+        shape = MaterialTheme.shapes.medium,
+        colors = CardDefaults.cardColors(containerColor = containerColor),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+        border = BorderStroke(MascotOutlineWidth, MaterialTheme.colorScheme.outline)
     ) {
         Column(Modifier.padding(contentPadding), content = content)
     }
