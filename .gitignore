@@ -14,3 +14,6 @@ local.properties
 
 # Release keystore and its passwords (never commit these)
 /keystore/
+
+# Impeccable session state (decision server, per-run answers)
+.impeccable/questions/
