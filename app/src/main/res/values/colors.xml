@@ -3,4 +3,7 @@
     <!-- Matches the cat theme's cream ground, so the pre-Compose frame is the same colour as the
          first composed one. values-night/ overrides it for dark. -->
     <color name="window_background">#FBF3E6</color>
+    <!-- The adaptive icon's background layer: the teal the artwork was supplied on, as a flat
+         colour so the launcher mask has full bleed to crop into whatever shape it uses. -->
+    <color name="ic_launcher_background">#028784</color>
 </resources>
