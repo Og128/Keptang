@@ -8,13 +8,12 @@ android
 
 ## Users
 
-One person tracking their own day-to-day spending, living in Thailand and spending in Thai baht.
-They are the sole user and the developer; there is no second audience, no team, no client.
+A single person tracking their own day-to-day spending, in a currency the app is configured for.
+There is one audience and no second one: no team, no client, no shared account.
 
-The defining situation is hands-busy and away from a desk: walking out of a restaurant, leaving a
-7-Eleven, getting off a motorbike taxi. The job is to record what was just spent in the two or
-three seconds before it is forgotten, and — separately, later, sitting down — to understand where
-the month went.
+The defining situation is hands-busy and away from a desk: leaving a restaurant, a shop, a taxi.
+The job is to record what was just spent in the two or three seconds before it is forgotten, and
+— separately, later, sitting down — to understand where the month went.
 
 Those two moments are different jobs with different tools. Capture happens from the home screen
 and never opens the app. Understanding happens inside the app and is never urgent.
@@ -46,14 +45,14 @@ is remembered and applied to future captures.
 - Notifications are the feedback channel for capture, because the app is not open when it happens.
 - The app itself is for reviewing ambiguous captures, browsing and editing history, setting
   budgets, tagging, CSV export, and settings.
-- Currency is Thai baht. Expenses in another currency are recorded but excluded from budget totals,
-  and surfaced rather than silently dropped.
-- Distribution is a signed APK handed to friends directly; there is no Play Store listing.
+- The app is configured for a single default currency, THB by default. Expenses in another
+  currency are recorded but excluded from budget totals, and surfaced rather than silently
+  dropped.
+- Distribution is a signed APK installed directly; there is no Play Store listing.
 
 ## Capabilities and Constraints
 
-Confirmed functionality that must survive any redesign — the user has stated features do not
-change:
+Confirmed functionality that must survive any redesign; the feature set is fixed:
 
 - Voice capture, Quick Add, manual entry, recurring expenses
 - Inbox (captures) and Review (ambiguous or failed captures)
@@ -61,7 +60,7 @@ change:
 - Dashboard with a configurable card order and visibility
 - Budgets: overall and per-category, monthly or weekly, each on its own cycle
 - Categories with colour and icon, editable
-- Tags, CSV export, four colour themes (Default, Dark, Light, AMOLED)
+- Tags, CSV export, and a user-selectable colour theme
 
 Constraints:
 
@@ -82,8 +81,8 @@ Constraints:
 
 ## Evidence on Hand
 
-- Real data: the user's own expense history on the device. Any screenshot or demonstration uses
-  real personal amounts.
+- The only real data is whatever expense history exists on the installed device, which is personal.
+  Screenshots and demonstrations must not be published without checking what amounts they show.
 - `CONTEXT.md` (domain glossary) and `docs/adr/` (four accepted decisions) are the product's own
   written record.
 - No testimonials, no user research, no usage metrics, no competitor benchmarks exist. Future work
