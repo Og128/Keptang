@@ -77,7 +77,7 @@ fun ExpenseCalendarView(
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
             IconButton(onClick = { displayedMonth = displayedMonth.minusMonths(1) }) {
-                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null)
+                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.calendar_previous_month))
             }
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 Text(displayedMonth.format(monthYearFormatter), style = MaterialTheme.typography.titleMedium)
@@ -89,7 +89,7 @@ fun ExpenseCalendarView(
                 }
             }
             IconButton(onClick = { displayedMonth = displayedMonth.plusMonths(1) }) {
-                Icon(Icons.AutoMirrored.Filled.ArrowForward, contentDescription = null)
+                Icon(Icons.AutoMirrored.Filled.ArrowForward, contentDescription = stringResource(R.string.calendar_next_month))
             }
         }
 

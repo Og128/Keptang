@@ -2,6 +2,9 @@ package com.keptang.ui.navigation
 
 import android.net.Uri
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.navigationBars
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -241,7 +244,16 @@ private fun KeptangBottomBar(currentRoute: String?, onNavigate: (String) -> Unit
 
     Box(Modifier.fillMaxWidth()) {
         Surface(tonalElevation = 3.dp, modifier = Modifier.fillMaxWidth()) {
-            Row(Modifier.fillMaxWidth().height(72.dp), verticalAlignment = Alignment.CenterVertically) {
+            // Edge-to-edge puts the gesture bar under this Surface. Padding inside the bar rather
+            // than around it also keeps Scaffold's bottom content padding correct, since that is
+            // measured from the bar's full height.
+            Row(
+                Modifier
+                    .fillMaxWidth()
+                    .windowInsetsPadding(WindowInsets.navigationBars)
+                    .height(72.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
                 leftTabs.forEach { tab ->
                     BottomBarItem(tab, selected = currentRoute == tab.route, onClick = { onNavigate(tab.route) }, modifier = Modifier.weight(1f))
                 }

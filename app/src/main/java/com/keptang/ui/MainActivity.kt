@@ -8,6 +8,7 @@ import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
 import androidx.activity.ComponentActivity
+import androidx.activity.enableEdgeToEdge
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
@@ -54,6 +55,9 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        // Draw behind the system bars. KeptangTheme tints them to match the chosen scheme, and
+        // the Scaffold in KeptangNavHost insets the content back out from under them.
+        enableEdgeToEdge()
         startCaptureId = intent.getStringExtra(EXTRA_OPEN_CAPTURE_ID)
         micPermissionRequested = intent.getBooleanExtra(EXTRA_REQUEST_MIC_PERMISSION, false)
 

@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Matches Material's light surface, so the pre-Compose frame is the same colour as the
+         first composed one. values-night/ overrides it for dark. -->
+    <color name="window_background">#FFFBFE</color>
+</resources>

@@ -58,7 +58,7 @@ class QuickAddActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         setContent {
             val settings by ServiceLocator.settingsRepository.settings.collectAsStateWithLifecycle(initialValue = AppSettings())
-            KeptangTheme(colorTheme = settings.colorTheme) {
+            KeptangTheme(colorTheme = settings.colorTheme, applyToWindow = false) {
                 QuickAddScreen(
                     onDismiss = { finish() },
                     onSubmit = { text ->

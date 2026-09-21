@@ -1,6 +1,7 @@
 package com.keptang.ui.categories
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -41,6 +42,9 @@ fun CategoriesScreen(
     val categories by viewModel.categories.collectAsStateWithLifecycle()
 
     Scaffold(
+        // Nested inside the NavHost, which is already inset by the root Scaffold in
+        // KeptangNavHost - applying the system bars again would double the padding.
+        contentWindowInsets = WindowInsets(0),
         floatingActionButton = {
             FloatingActionButton(onClick = onAddCategory) {
                 Icon(Icons.Filled.Add, contentDescription = stringResource(R.string.categories_add_title))

@@ -63,6 +63,7 @@
     <string name="budgets_empty">No budgets yet. Tap + to set one.</string>
 
     <string name="action_retry">Retry</string>
+    <string name="tag_remove_description">Remove tag %1$s</string>
     <string name="action_delete">Delete</string>
     <string name="action_approve">Approve</string>
     <string name="action_edit">Edit</string>

@@ -1,11 +1,17 @@
 package com.keptang.ui.theme
 
+import android.app.Activity
+import android.graphics.drawable.ColorDrawable
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.SideEffect
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.platform.LocalView
+import androidx.core.view.WindowCompat
 import com.keptang.data.repository.ColorTheme
 
 // "Default" - the original brand green, follows the system's light/dark setting.
@@ -51,10 +57,16 @@ private val AmoledColors = SombreColors.copy(
     surfaceContainerLowest = Color(0xFF000000)
 )
 
+/**
+ * @param applyToWindow tints the system bars and the window background to match [colorTheme].
+ *   [com.keptang.ui.quickadd.QuickAddActivity] passes `false`: it is a translucent popup drawn
+ *   over the home screen, so it owns neither the bars nor the background behind it.
+ */
 @Composable
 fun KeptangTheme(
     colorTheme: ColorTheme = ColorTheme.DEFAULT,
     darkTheme: Boolean = isSystemInDarkTheme(),
+    applyToWindow: Boolean = true,
     content: @Composable () -> Unit
 ) {
     val colorScheme = when (colorTheme) {
@@ -63,5 +75,31 @@ fun KeptangTheme(
         ColorTheme.LIGHT -> ClairColors
         ColorTheme.AMOLED -> AmoledColors
     }
+
+    if (applyToWindow) {
+        val view = LocalView.current
+        if (!view.isInEditMode) {
+            val window = (view.context as Activity).window
+            val lightBars = when (colorTheme) {
+                ColorTheme.DEFAULT -> !darkTheme
+                ColorTheme.LIGHT -> true
+                ColorTheme.DARK, ColorTheme.AMOLED -> false
+            }
+            SideEffect {
+                // Edge-to-edge draws under the system bars, so their icons have to be tinted for
+                // whichever scheme the user picked - the system only knows about its own
+                // day/night setting, which "Dark", "Light" and "AMOLED" deliberately ignore.
+                // Without this, AMOLED gets dark icons on pure black.
+                WindowCompat.getInsetsController(window, view).apply {
+                    isAppearanceLightStatusBars = lightBars
+                    isAppearanceLightNavigationBars = lightBars
+                }
+                // The window paints before Compose does, so without this the outgoing theme's
+                // colour flashes through on a theme switch or a configuration change.
+                window.setBackgroundDrawable(ColorDrawable(colorScheme.background.toArgb()))
+            }
+        }
+    }
+
     MaterialTheme(colorScheme = colorScheme, content = content)
 }

@@ -4,6 +4,7 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -45,6 +46,7 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.InputChip
+import androidx.compose.material3.InputChipDefaults
 import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
@@ -237,7 +239,7 @@ fun ManualExpenseScreen(
         }
         HorizontalDivider()
 
-        Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(vertical = 16.dp)) {
+        Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).imePadding().padding(vertical = 16.dp)) {
             if (!isEditMode) {
                 Row(
                     Modifier.fillMaxWidth().padding(horizontal = 8.dp),
@@ -604,15 +606,18 @@ private fun TagInput(
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 tags.forEach { tag ->
+                    // Removing is the chip's only action, so it belongs on the chip itself: the
+                    // trailing icon used to carry it at its own 16.dp size, a third of the 48.dp
+                    // minimum, and the chip around it did nothing at all.
                     InputChip(
                         selected = false,
-                        onClick = {},
+                        onClick = { onRemoveTag(tag) },
                         label = { Text(tag) },
                         trailingIcon = {
                             Icon(
                                 Icons.Filled.Close,
-                                contentDescription = stringResource(R.string.action_delete),
-                                modifier = Modifier.size(16.dp).clickable { onRemoveTag(tag) }
+                                contentDescription = stringResource(R.string.tag_remove_description, tag),
+                                modifier = Modifier.size(InputChipDefaults.IconSize)
                             )
                         }
                     )

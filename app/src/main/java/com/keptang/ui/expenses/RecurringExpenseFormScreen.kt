@@ -1,6 +1,7 @@
 package com.keptang.ui.expenses
 
 import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -69,7 +70,7 @@ fun RecurringExpenseFormScreen(
     val periodAnchor = if (periodType == BudgetPeriodType.MONTHLY) monthlyAnchor else weeklyAnchor
     val canSave = name.isNotBlank() && amountMinorUnits != null && category.isNotBlank() && periodAnchor != null
 
-    Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp)) {
+    Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).imePadding().padding(16.dp)) {
         Text(stringResource(R.string.recurring_edit_title), style = MaterialTheme.typography.titleLarge)
 
         OutlinedTextField(

@@ -1,6 +1,18 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <style name="Theme.Keptang" parent="android:Theme.Material.Light.NoActionBar" />
+    <!--
+        This theme only paints the window before Compose draws its first frame; KeptangTheme owns
+        everything after that. The background matters because the wrong one is a white flash on a
+        cold start. values-night/ carries the dark counterpart, which covers the "Default" theme
+        (the one that follows the system). A user who forces "Dark" or "AMOLED" while their system
+        is in light mode still gets one light frame - fixing that needs the choice readable
+        synchronously in onCreate, which DataStore is not.
+    -->
+    <style name="Theme.Keptang" parent="android:Theme.Material.Light.NoActionBar">
+        <item name="android:windowBackground">@color/window_background</item>
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+    </style>
 
     <!-- Used by QuickAddActivity, which draws its own dim scrim + card in Compose rather than
          relying on a native dialog theme, since the rest of the app is Compose-only. -->

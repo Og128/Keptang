@@ -1,5 +1,6 @@
 package com.keptang.ui.inbox
 
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -55,6 +56,9 @@ fun InboxScreen(
     var viewMode by remember { mutableStateOf(if (startOnReview) InboxViewMode.REVIEW else InboxViewMode.TRANSCRIPTS) }
 
     Scaffold(
+        // Nested inside the NavHost, which is already inset by the root Scaffold in
+        // KeptangNavHost - applying the system bars again would double the padding.
+        contentWindowInsets = WindowInsets(0),
         topBar = {
             TopAppBar(
                 title = { Text(stringResource(R.string.nav_inbox)) },
