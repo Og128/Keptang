@@ -8,6 +8,7 @@ import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.keptang.data.repository.AppSettings
 import com.keptang.data.repository.ColorTheme
+import com.keptang.widget.VoiceCaptureWidgetProvider
 import com.keptang.data.repository.ExpenseRepository
 import com.keptang.data.repository.SettingsRepository
 import com.keptang.data.repository.TagRepository
@@ -37,7 +38,13 @@ class SettingsViewModel(
     fun setDefaultAccount(account: String) = viewModelScope.launch { settingsRepository.setDefaultAccount(account) }
     fun setAudioRetentionDays(days: Int) = viewModelScope.launch { settingsRepository.setAudioRetentionDays(days) }
     fun setLanguage(code: String) = viewModelScope.launch { settingsRepository.setLanguage(code) }
-    fun setColorTheme(theme: ColorTheme) = viewModelScope.launch { settingsRepository.setColorTheme(theme) }
+    fun setColorTheme(theme: ColorTheme) = viewModelScope.launch {
+        settingsRepository.setColorTheme(theme)
+        // The widget lives outside the app and never recomposes, so it only learns about a new
+        // mascot if something tells it. Without this the home screen keeps the old animal until
+        // the next recording or a launcher restart.
+        VoiceCaptureWidgetProvider.refreshMascot(ServiceLocator.context())
+    }
 
     private val _isSeedingDemoData = MutableStateFlow(false)
     val isSeedingDemoData: StateFlow<Boolean> = _isSeedingDemoData.asStateFlow()

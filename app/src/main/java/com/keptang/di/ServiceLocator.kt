@@ -38,7 +38,8 @@ object ServiceLocator {
 
     @Volatile private var appContext: Context? = null
 
-    private fun context(): Context =
+    /** The application context, for the few collaborators that need one and are not given it. */
+    fun context(): Context =
         appContext ?: error("ServiceLocator.init(context) must be called from Application.onCreate")
 
     fun init(context: Context) {
@@ -51,7 +52,11 @@ object ServiceLocator {
 
     val settingsRepository: SettingsRepository by lazy { SettingsRepository(context()) }
 
-    private val appScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+    /**
+     * Outlives any one screen or service. Used by work that must finish even when its caller is
+     * being torn down - resetting the home-screen widget as the capture service stops, say.
+     */
+    val appScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 
     /**
      * Synchronously-readable snapshot of [settingsRepository]'s settings, for call sites that

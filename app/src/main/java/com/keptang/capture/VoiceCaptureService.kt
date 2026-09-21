@@ -18,6 +18,7 @@ import com.keptang.di.ServiceLocator
 import com.keptang.notification.NotificationIds
 import com.keptang.transcription.TranscriptionResult
 import com.keptang.widget.VoiceCaptureWidgetProvider
+import com.keptang.widget.WidgetMascot
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -167,7 +168,8 @@ class VoiceCaptureService : Service() {
     /** Alternates the widget's mouth-open/mouth-closed frames every 500ms while listening, like a talking mascot. */
     private fun startWidgetAnimation() {
         widgetAnimationJob = serviceScope.launch {
-            val frames = listOf(R.drawable.widget_mic_blanc_po, R.drawable.widget_mic_blanc_go)
+            val mascot = WidgetMascot.current(applicationContext)
+            val frames = listOf(mascot.mouthClosed, mascot.mouthOpen)
             var frameIndex = 0
             while (isActive) {
                 VoiceCaptureWidgetProvider.updateAllWidgets(applicationContext, frames[frameIndex % frames.size])
@@ -180,7 +182,12 @@ class VoiceCaptureService : Service() {
     private fun stopWidgetAnimation() {
         widgetAnimationJob?.cancel()
         widgetAnimationJob = null
-        VoiceCaptureWidgetProvider.updateAllWidgets(applicationContext, R.drawable.widget_mic_blanc)
+        // Resolving the mascot suspends, so the reset runs on the app scope rather than this
+        // service's: serviceScope is cancelled moments later in onDestroy, and the widget would
+        // be left frozen on whichever mouth frame the animation stopped on.
+        ServiceLocator.appScope.launch {
+            VoiceCaptureWidgetProvider.refreshMascot(applicationContext)
+        }
     }
 
     private fun vibrateFeedback() {

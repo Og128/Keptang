@@ -10,6 +10,8 @@ import android.widget.RemoteViews
 import androidx.annotation.DrawableRes
 import com.keptang.R
 import com.keptang.capture.VoiceCaptureService
+import com.keptang.di.ServiceLocator
+import kotlinx.coroutines.launch
 
 /**
  * Home-screen widget: a single microphone button that starts [VoiceCaptureService] directly.
@@ -22,13 +24,31 @@ import com.keptang.capture.VoiceCaptureService
  */
 class VoiceCaptureWidgetProvider : AppWidgetProvider() {
 
+    /**
+     * Reading the chosen mascot means reading DataStore, which suspends, so the broadcast is held
+     * open with goAsync() until the views are pushed. Finishing onUpdate before the read would
+     * draw the wrong animal and only correct itself on the next update.
+     */
     override fun onUpdate(context: Context, appWidgetManager: AppWidgetManager, appWidgetIds: IntArray) {
-        for (appWidgetId in appWidgetIds) {
-            appWidgetManager.updateAppWidget(appWidgetId, buildRemoteViews(context, R.drawable.widget_mic_blanc))
+        val pending = goAsync()
+        ServiceLocator.appScope.launch {
+            try {
+                val frames = WidgetMascot.current(context)
+                for (appWidgetId in appWidgetIds) {
+                    appWidgetManager.updateAppWidget(appWidgetId, buildRemoteViews(context, frames.rest))
+                }
+            } finally {
+                pending.finish()
+            }
         }
     }
 
     companion object {
+
+        /** Redraws every placed widget with whichever animal the current theme selects. */
+        suspend fun refreshMascot(context: Context) {
+            updateAllWidgets(context, WidgetMascot.current(context).rest)
+        }
         /** Pushes [imageRes] to every placed instance of this widget - used both for the resting icon and for each frame of the listening animation in [VoiceCaptureService]. */
         fun updateAllWidgets(context: Context, @DrawableRes imageRes: Int) {
             val appWidgetManager = AppWidgetManager.getInstance(context)
