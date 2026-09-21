@@ -59,6 +59,7 @@ import com.keptang.data.db.CategoryEntity
 import com.keptang.data.db.ExpenseEntity
 import com.keptang.data.db.RecurringExpenseEntity
 import com.keptang.parser.UNCATEGORIZED
+import com.keptang.ui.common.MoneyText
 import com.keptang.ui.common.formatDateHeader
 import com.keptang.ui.common.formatMoney
 import com.keptang.ui.common.localDateOf
@@ -99,24 +100,33 @@ fun ExpensesScreen(
             Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Image(
-                painter = painterResource(mascotFor(MascotRole.READING)),
-                contentDescription = stringResource(R.string.nav_expenses),
-                modifier = Modifier.height(56.dp),
-                alignment = Alignment.CenterStart,
-                contentScale = ContentScale.Fit
-            )
-            OutlinedTextField(
-                value = searchQuery,
-                onValueChange = { searchQuery = it },
-                modifier = Modifier.weight(1f).padding(horizontal = 8.dp).height(52.dp),
-                placeholder = { Text(stringResource(R.string.expenses_search_placeholder)) },
-                leadingIcon = { Icon(Icons.Filled.Search, contentDescription = null) },
-                singleLine = true,
-                textStyle = MaterialTheme.typography.bodyMedium
+            Text(
+                stringResource(R.string.nav_expenses),
+                style = MaterialTheme.typography.headlineMedium,
+                modifier = Modifier.weight(1f)
             )
             ViewModePill(viewMode, onSelect = { viewMode = it })
+            Image(
+                painter = painterResource(mascotFor(MascotRole.READING)),
+                contentDescription = null,
+                modifier = Modifier.size(64.dp),
+                contentScale = ContentScale.Fit
+            )
         }
+
+        // The search field gets its own row. Sharing one with the mascot and the view switcher
+        // left it about a third of the screen wide, which is not enough to read back what you
+        // typed - and it is the control on this screen people actually use.
+        OutlinedTextField(
+            value = searchQuery,
+            onValueChange = { searchQuery = it },
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
+            placeholder = { Text(stringResource(R.string.expenses_search_placeholder)) },
+            leadingIcon = { Icon(Icons.Filled.Search, contentDescription = null) },
+            shape = MaterialTheme.shapes.medium,
+            singleLine = true,
+            textStyle = MaterialTheme.typography.bodyMedium
+        )
 
         val searchedExpenses = expenses.filter {
             searchQuery.isBlank() || it.description?.contains(searchQuery, ignoreCase = true) == true
@@ -384,7 +394,9 @@ internal fun ExpenseCard(expense: ExpenseEntity, category: CategoryEntity?, recu
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .background(color.copy(alpha = 0.1f))
+                // No per-row tint. Every row used to be washed with its category colour at 10%,
+                // which turned a long ledger into a stripe of pastels and left nothing for the
+                // screen to emphasise. The colour now lives only in the badge, where it reads.
                 .clickable(onClick = onClick)
                 .padding(horizontal = 16.dp, vertical = 12.dp),
             verticalAlignment = Alignment.CenterVertically
@@ -409,14 +421,16 @@ internal fun ExpenseCard(expense: ExpenseEntity, category: CategoryEntity?, recu
                     )
                 }
             }
-            Text(
-                "-" + formatMoney(expense.amountMinorUnits, expense.currencyCode),
+            // Not red. Every row in a spending ledger is money going out, so colouring them all
+            // as errors says nothing and spends the one colour that should mean a real problem.
+            MoneyText(
+                amountMinorUnits = expense.amountMinorUnits,
+                currencyCode = expense.currencyCode,
                 style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.error,
                 modifier = Modifier.padding(start = 8.dp)
             )
         }
-        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f))
+        HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.15f))
     }
 }
 

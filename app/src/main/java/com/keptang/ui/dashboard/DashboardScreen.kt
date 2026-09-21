@@ -7,6 +7,8 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
 import androidx.compose.foundation.horizontalScroll
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -489,31 +491,35 @@ private fun BudgetSection(budgetSnapshot: BudgetSnapshot, categoryColors: Map<St
     val unassignedSpent = (totalSpent - categorizedSpent).coerceAtLeast(0L)
     val ringTotal = overall?.budget?.amountMinorUnits ?: budgetSnapshot.categories.sumOf { it.budget.amountMinorUnits }
 
-    Column(Modifier.fillMaxWidth().padding(top = 12.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-        BudgetDonut(
-            totalMinorUnits = ringTotal,
-            spentMinorUnits = totalSpent,
-            slices = categorySlices,
-            unassignedMinorUnits = unassignedSpent,
-            unassignedColor = outline,
-            currencyCode = budgetSnapshot.defaultCurrencyCode
-        )
-
+    Column(Modifier.fillMaxWidth().padding(top = 4.dp)) {
         overall?.let { standing ->
             Text(
                 formatPeriodRange(standing.periodStart, standing.periodEndExclusive),
-                style = MaterialTheme.typography.bodySmall,
-                modifier = Modifier.padding(top = 8.dp)
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(bottom = 12.dp)
+            )
+            BudgetMeasure(
+                label = stringResource(R.string.budget_form_target_overall),
+                spentMinorUnits = standing.spentMinorUnits,
+                limitMinorUnits = standing.budget.amountMinorUnits,
+                currencyCode = budgetSnapshot.defaultCurrencyCode,
+                fill = MaterialTheme.colorScheme.primary
             )
         }
 
-        Column(Modifier.fillMaxWidth().padding(top = 20.dp)) {
-            categorySlices.forEach { slice ->
-                BudgetLegendRow(slice.label, slice.color, slice.amountMinorUnits, budgetSnapshot.defaultCurrencyCode)
-            }
-            if (unassignedSpent > 0L) {
-                BudgetLegendRow(stringResource(R.string.budgets_other_label), outline, unassignedSpent, budgetSnapshot.defaultCurrencyCode)
-            }
+        budgetSnapshot.categories.sortedByDescending { it.spentMinorUnits }.forEach { standing ->
+            BudgetMeasure(
+                label = standing.budget.category.orEmpty(),
+                spentMinorUnits = standing.spentMinorUnits,
+                limitMinorUnits = standing.budget.amountMinorUnits,
+                currencyCode = budgetSnapshot.defaultCurrencyCode,
+                fill = categoryColors[standing.budget.category] ?: outline
+            )
+        }
+
+        if (unassignedSpent > 0L) {
+            BudgetLegendRow(stringResource(R.string.budgets_other_label), outline, unassignedSpent, budgetSnapshot.defaultCurrencyCode)
         }
 
         TextButton(onClick = onOpenBudgets, modifier = Modifier.padding(top = 4.dp)) {
@@ -521,6 +527,64 @@ private fun BudgetSection(budgetSnapshot: BudgetSnapshot, categoryColors: Map<St
         }
     }
 }
+
+/**
+ * A budget as a position on a track, not a verdict.
+ *
+ * The track runs the full width and the fill is the whole story: where you are, how much room is
+ * left, and - when the fill passes the end and the overflow is hatched back over it - how far
+ * past. A green/amber/red pill would compress all of that into three states, and would be
+ * invisible to anyone who cannot separate those three colours.
+ */
+@Composable
+private fun BudgetMeasure(
+    label: String,
+    spentMinorUnits: Long,
+    limitMinorUnits: Long,
+    currencyCode: String,
+    fill: Color
+) {
+    val fraction = if (limitMinorUnits <= 0L) 0f else (spentMinorUnits.toFloat() / limitMinorUnits).coerceIn(0f, 1f)
+    val animated by animateFloatAsState(fraction, tween(BUDGET_FILL_MILLIS), label = "budget")
+    val over = spentMinorUnits > limitMinorUnits
+    val remaining = limitMinorUnits - spentMinorUnits
+
+    Column(Modifier.fillMaxWidth().padding(vertical = 10.dp)) {
+        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+            Text(
+                label,
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.weight(1f)
+            )
+            MoneyText(
+                amountMinorUnits = if (over) -remaining else remaining,
+                currencyCode = currencyCode,
+                style = MaterialTheme.typography.titleSmall,
+                animate = true
+            )
+        }
+        Box(
+            Modifier
+                .fillMaxWidth()
+                .padding(top = 6.dp)
+                .height(BUDGET_TRACK_HEIGHT)
+                .clip(MaterialTheme.shapes.extraSmall)
+                .background(MaterialTheme.colorScheme.outline.copy(alpha = 0.12f))
+                .border(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.35f), MaterialTheme.shapes.extraSmall)
+        ) {
+            Box(
+                Modifier
+                    .fillMaxHeight()
+                    .fillMaxWidth(animated)
+                    .background(if (over) MaterialTheme.colorScheme.error else fill)
+            )
+        }
+    }
+}
+
+private val BUDGET_TRACK_HEIGHT = 14.dp
+private const val BUDGET_FILL_MILLIS = 650
 
 /** A ring split into colored arcs, drawn from -90deg (top) clockwise, with arbitrary center content. Shared by [BudgetDonut] (partial fill, headroom left as track) and [SpendingDonut] (always fully filled, a plain pie). */
 @Composable

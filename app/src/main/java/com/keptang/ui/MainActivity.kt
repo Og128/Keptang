@@ -98,7 +98,10 @@ class MainActivity : ComponentActivity() {
                 }
 
                 when (firstRunCompleted) {
-                    null -> Unit // wait for the persisted flag to load
+                    // Reading the persisted flag is a real wait, however short. It used to render
+                    // nothing, so a cold start showed a bare coloured rectangle before the app
+                    // appeared; the pair fills it instead of leaving the first frame blank.
+                    null -> LoadingScreen()
                     false -> OnboardingScreen(
                         micPermissionGranted = micGranted,
                         onRequestMicPermission = { permissionLauncher.launch(requiredPermissions()) },

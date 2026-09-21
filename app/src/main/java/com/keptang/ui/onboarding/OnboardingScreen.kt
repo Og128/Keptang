@@ -1,9 +1,17 @@
 package com.keptang.ui.onboarding
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material.icons.filled.Widgets
@@ -15,9 +23,13 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.keptang.R
+import com.keptang.ui.common.InfoCard
 
 @Composable
 fun OnboardingScreen(
@@ -30,38 +42,81 @@ fun OnboardingScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
-                .padding(24.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = 24.dp, vertical = 32.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Icon(Icons.Filled.Mic, contentDescription = null, modifier = Modifier.padding(bottom = 16.dp))
-            Text(stringResource(R.string.onboarding_title), style = MaterialTheme.typography.headlineSmall)
-            Text(
-                stringResource(R.string.onboarding_mic_rationale),
-                style = MaterialTheme.typography.bodyMedium,
-                modifier = Modifier.padding(vertical = 16.dp)
+            // Both animals, before the user has met either: whichever theme they end up on, the
+            // welcome is the same pair, so neither reads as the default and the other as a skin.
+            Image(
+                painter = painterResource(R.drawable.mascots_piggybank),
+                contentDescription = null,
+                modifier = Modifier.size(200.dp)
             )
-            if (!micPermissionGranted) {
-                Button(onClick = onRequestMicPermission) {
-                    Text(stringResource(R.string.onboarding_grant_permission))
+
+            Text(
+                stringResource(R.string.onboarding_title),
+                style = MaterialTheme.typography.headlineMedium,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.padding(top = 8.dp)
+            )
+
+            OnboardingStep(
+                icon = Icons.Filled.Mic,
+                title = stringResource(R.string.onboarding_grant_permission),
+                body = stringResource(R.string.onboarding_mic_rationale),
+                modifier = Modifier.padding(top = 28.dp)
+            ) {
+                if (!micPermissionGranted) {
+                    Button(onClick = onRequestMicPermission, modifier = Modifier.padding(top = 12.dp)) {
+                        Text(stringResource(R.string.onboarding_grant_permission))
+                    }
                 }
             }
 
-            Icon(
-                Icons.Filled.Widgets,
-                contentDescription = null,
-                modifier = Modifier.padding(top = 32.dp, bottom = 16.dp)
-            )
-            Text(stringResource(R.string.onboarding_add_widget_title), style = MaterialTheme.typography.titleMedium)
-            Text(
-                stringResource(R.string.onboarding_add_widget_body),
-                style = MaterialTheme.typography.bodyMedium,
-                modifier = Modifier.padding(vertical = 16.dp)
+            OnboardingStep(
+                icon = Icons.Filled.Widgets,
+                title = stringResource(R.string.onboarding_add_widget_title),
+                body = stringResource(R.string.onboarding_add_widget_body),
+                modifier = Modifier.padding(top = 16.dp)
             )
 
-            Button(onClick = onDone, enabled = micPermissionGranted) {
-                Text(stringResource(R.string.onboarding_done))
+            Spacer(Modifier.height(28.dp))
+            Button(
+                onClick = onDone,
+                enabled = micPermissionGranted,
+                modifier = Modifier.fillMaxWidth().height(56.dp)
+            ) {
+                Text(stringResource(R.string.onboarding_done), style = MaterialTheme.typography.titleMedium)
             }
+        }
+    }
+}
+
+@Composable
+private fun OnboardingStep(
+    icon: ImageVector,
+    title: String,
+    body: String,
+    modifier: Modifier = Modifier,
+    action: @Composable () -> Unit = {}
+) {
+    InfoCard(modifier = modifier.fillMaxWidth()) {
+        Column(Modifier.padding(20.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(icon, contentDescription = null, modifier = Modifier.size(24.dp))
+                Text(
+                    title,
+                    style = MaterialTheme.typography.titleMedium,
+                    modifier = Modifier.padding(start = 12.dp)
+                )
+            }
+            Text(
+                body,
+                style = MaterialTheme.typography.bodyMedium,
+                modifier = Modifier.padding(top = 10.dp)
+            )
+            action()
         }
     }
 }
