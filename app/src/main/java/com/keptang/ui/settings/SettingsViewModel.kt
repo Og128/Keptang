@@ -6,6 +6,8 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
+import com.keptang.data.db.AccountEntity
+import com.keptang.data.repository.AccountRepository
 import com.keptang.data.repository.AppSettings
 import com.keptang.data.repository.ColorTheme
 import com.keptang.widget.VoiceCaptureWidgetProvider
@@ -26,8 +28,12 @@ import kotlinx.coroutines.launch
 class SettingsViewModel(
     private val settingsRepository: SettingsRepository,
     private val expenseRepository: ExpenseRepository,
-    private val tagRepository: TagRepository
+    private val tagRepository: TagRepository,
+    private val accountRepository: AccountRepository
 ) : ViewModel() {
+
+    val accounts: StateFlow<List<AccountEntity>> = accountRepository.observeAll()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     val settings: StateFlow<AppSettings> = settingsRepository.settings
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), AppSettings())
@@ -35,7 +41,6 @@ class SettingsViewModel(
     fun setProfileName(name: String) = viewModelScope.launch { settingsRepository.setProfileName(name) }
     fun setCurrency(code: String) = viewModelScope.launch { settingsRepository.setCurrency(code) }
     fun setTimeZone(id: String) = viewModelScope.launch { settingsRepository.setTimeZone(id) }
-    fun setDefaultAccount(account: String) = viewModelScope.launch { settingsRepository.setDefaultAccount(account) }
     fun setAudioRetentionDays(days: Int) = viewModelScope.launch { settingsRepository.setAudioRetentionDays(days) }
     fun setLanguage(code: String) = viewModelScope.launch { settingsRepository.setLanguage(code) }
     fun setColorTheme(theme: ColorTheme) = viewModelScope.launch {
@@ -58,7 +63,8 @@ class SettingsViewModel(
                 ServiceLocator.captureRepository,
                 ServiceLocator.expenseRepository,
                 ServiceLocator.categoryRepository,
-                ServiceLocator.settingsRepository
+                ServiceLocator.settingsRepository,
+                ServiceLocator.accountRepository
             )
             _isSeedingDemoData.value = false
         }
@@ -73,7 +79,8 @@ class SettingsViewModel(
         viewModelScope.launch {
             val expenses = expenseRepository.observeApproved().first()
             val tagsByExpenseId = tagRepository.observeTagsByExpenseId().first()
-            val csv = CsvExporter.buildCsv(expenses, tagsByExpenseId)
+            val accountNamesById = accountRepository.getAll().associate { it.id to it.name }
+            val csv = CsvExporter.buildCsv(expenses, tagsByExpenseId, accountNamesById)
             val file = CsvExporter.writeToCache(context, csv)
             onReady(CsvExporter.shareIntent(context, file))
         }
@@ -82,7 +89,12 @@ class SettingsViewModel(
     companion object {
         val Factory = viewModelFactory {
             initializer {
-                SettingsViewModel(ServiceLocator.settingsRepository, ServiceLocator.expenseRepository, ServiceLocator.tagRepository)
+                SettingsViewModel(
+                    ServiceLocator.settingsRepository,
+                    ServiceLocator.expenseRepository,
+                    ServiceLocator.tagRepository,
+                    ServiceLocator.accountRepository
+                )
             }
         }
     }

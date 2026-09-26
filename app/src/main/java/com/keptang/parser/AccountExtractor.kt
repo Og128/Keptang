@@ -17,7 +17,19 @@ object AccountExtractor {
         RegexOption.IGNORE_CASE
     )
 
-    fun extract(segment: String, languageCode: String = "en"): String? {
+    /**
+     * @param knownNames the accounts that actually exist, so "coffee 50 on HSBC" resolves without
+     *   the speaker having to say the word "account". Checked first, and longest-first so a
+     *   "K-bank savings" never loses to a "K-bank" that is merely a prefix of it. A bare name
+     *   could not be recognised any other way: without the list, any noun would qualify.
+     */
+    fun extract(segment: String, languageCode: String = "en", knownNames: List<String> = emptyList()): String? {
+        knownNames
+            .filter { it.isNotBlank() }
+            .sortedByDescending { it.length }
+            .firstOrNull { name -> nameRegex(name).containsMatchIn(segment) }
+            ?.let { return it }
+
         val match = (if (languageCode == "fr") REGEX_FR else REGEX).find(segment) ?: return null
         val raw = match.groupValues[1].trim()
         if (raw.isEmpty()) return null
@@ -25,4 +37,11 @@ object AccountExtractor {
             word.replaceFirstChar { c -> c.uppercaseChar() }
         }
     }
+
+    /**
+     * Word-bounded and escaped, since account names are user input: "K-bank" contains regex
+     * metacharacters, and an unbounded match would find "TTB" inside "TTBK".
+     */
+    internal fun nameRegex(name: String): Regex =
+        Regex("""(?<![\p{L}\p{N}])${Regex.escape(name.trim())}(?![\p{L}\p{N}])""", RegexOption.IGNORE_CASE)
 }

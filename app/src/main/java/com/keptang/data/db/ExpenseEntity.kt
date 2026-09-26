@@ -16,7 +16,7 @@ import androidx.room.PrimaryKey
             onDelete = ForeignKey.CASCADE
         )
     ],
-    indices = [Index("capture_id"), Index(value = ["category"], name = "index_expenses_category"), Index(value = ["review_status"], name = "index_expenses_review_status")]
+    indices = [Index("capture_id"), Index(value = ["category"], name = "index_expenses_category"), Index(value = ["review_status"], name = "index_expenses_review_status"), Index(value = ["account"], name = "index_expenses_account")]
 )
 data class ExpenseEntity(
     @PrimaryKey val id: String,
@@ -26,8 +26,18 @@ data class ExpenseEntity(
     @ColumnInfo(name = "occurred_at_epoch_millis") val occurredAtEpochMillis: Long,
     @ColumnInfo(name = "time_zone_id") val timeZoneId: String,
     @ColumnInfo(name = "category") val category: String,
-    @ColumnInfo(name = "account") val account: String?,
-    @ColumnInfo(name = "payment_method") val paymentMethod: String?,
+    /**
+     * The [AccountEntity] this was paid from. The column is still called `account` from when it
+     * held the account's name as free text - the same reason `merchant` below keeps its name -
+     * and [KeptangDatabase.MIGRATION_10_11] rewrote those names into ids in place.
+     *
+     * No foreign key: adding one to an existing column means recreating the whole table, which
+     * would cascade into `expense_tags` and drop every tag link. Deletion is guarded in
+     * [com.keptang.data.repository.AccountRepository] instead, the same way categories are.
+     */
+    @ColumnInfo(name = "account") val accountId: String?,
+    /** Null on a cash-wallet expense, and on anything predating accounts. See [PaymentMethod]. */
+    @ColumnInfo(name = "payment_method") val paymentMethod: PaymentMethod?,
     /**
      * What the expense was for, as shown in the ledger: a merchant ("Starbucks"), a thing
      * ("Massage"), or whatever the user typed. The column is still called `merchant` from when

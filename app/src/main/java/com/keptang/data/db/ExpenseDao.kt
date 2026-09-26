@@ -46,6 +46,10 @@ interface ExpenseDao {
     @Query("SELECT DISTINCT category FROM expenses ORDER BY category ASC")
     fun observeDistinctCategories(): Flow<List<String>>
 
+    /** Everything charged to one account - the spending half of the cash wallet's balance. */
+    @Query("SELECT * FROM expenses WHERE account = :accountId ORDER BY occurred_at_epoch_millis DESC")
+    fun observeByAccount(accountId: String): Flow<List<ExpenseEntity>>
+
     /** Cascades a category rename (see [com.keptang.data.repository.CategoryRepository]). */
     @Query("UPDATE expenses SET category = :newName WHERE category = :oldName")
     suspend fun renameCategory(oldName: String, newName: String)

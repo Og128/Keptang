@@ -20,7 +20,8 @@ object CsvExporter {
 
     fun buildCsv(
         expenses: List<ExpenseEntity>,
-        tagsByExpenseId: Map<String, List<String>>
+        tagsByExpenseId: Map<String, List<String>>,
+        accountNamesById: Map<String, String> = emptyMap()
     ): String {
         val rows = expenses
             .sortedByDescending { it.occurredAtEpochMillis }
@@ -32,8 +33,8 @@ object CsvExporter {
                     expense.category,
                     tagsByExpenseId[expense.id].orEmpty().joinToString(";"),
                     expense.description.orEmpty(),
-                    expense.account.orEmpty(),
-                    expense.paymentMethod.orEmpty(),
+                    expense.accountId?.let { accountNamesById[it] }.orEmpty(),
+                    expense.paymentMethod?.name.orEmpty(),
                     expense.notes.orEmpty()
                 )
             }

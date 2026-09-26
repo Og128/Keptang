@@ -50,9 +50,9 @@ object DescriptionExtractor {
 
     private val ARTICLES = setOf("the", "a", "an", "my", "le", "la", "les", "un", "une", "des", "mon", "ma")
 
-    fun extract(segment: String, languageCode: String = "en"): String? {
+    fun extract(segment: String, languageCode: String = "en", accountNames: List<String> = emptyList()): String? {
         val isFrench = languageCode == "fr"
-        val cleaned = clean(segment, languageCode)
+        val cleaned = clean(segment, languageCode, accountNames)
         if (cleaned.isBlank()) return null
 
         val placePattern = if (isFrench) AT_PHRASE_FR else AT_PHRASE
@@ -69,9 +69,12 @@ object DescriptionExtractor {
     }
 
     /** Removes everything that is captured by another extractor, so only the subject is left. */
-    private fun clean(segment: String, languageCode: String): String {
+    private fun clean(segment: String, languageCode: String, accountNames: List<String>): String {
         var text = DateExpressions.stripDatePhrases(segment, languageCode)
         text = if (languageCode == "fr") ACCOUNT_PHRASE_FR.replace(text, " ") else ACCOUNT_PHRASE.replace(text, " ")
+        // A spoken account name is not what the expense was for. Without this, "coffee on HSBC"
+        // describes itself as "Coffee On HSBC".
+        for (name in accountNames) text = AccountExtractor.nameRegex(name).replace(text, " ")
         text = AMOUNT_WORDS.replace(text, " ")
         return text.replace(Regex("""[.,;!?]"""), " ").replace(Regex("""\s+"""), " ").trim()
     }

@@ -82,9 +82,11 @@ import com.keptang.ui.theme.MascotRole
 import com.keptang.ui.theme.mascotFor
 import com.keptang.R
 import com.keptang.data.db.BudgetPeriodType
+import com.keptang.data.db.PaymentMethod
 import com.keptang.ui.budgets.weekdayLabelRes
 import com.keptang.ui.common.formatMoneyInput
 import com.keptang.ui.common.localDateOf
+import com.keptang.ui.common.labelRes
 import com.keptang.ui.common.parseMoneyInput
 import java.time.Instant
 import java.time.LocalDate
@@ -114,6 +116,7 @@ fun ManualExpenseScreen(
     val isFromVoiceCapture by viewModel.isFromVoiceCapture.collectAsStateWithLifecycle()
     val existingTags by viewModel.existingTags.collectAsStateWithLifecycle()
     val knownTags by viewModel.knownTags.collectAsStateWithLifecycle()
+    val accounts by viewModel.accounts.collectAsStateWithLifecycle()
     val isEditMode = expenseId != null
 
     var amountText by remember { mutableStateOf("") }
@@ -122,8 +125,12 @@ fun ManualExpenseScreen(
     var categoryMenuExpanded by remember { mutableStateOf(false) }
     var description by remember { mutableStateOf("") }
     var notes by remember { mutableStateOf("") }
-    var account by remember(settings.defaultAccount) { mutableStateOf(settings.defaultAccount) }
-    var paymentMethod by remember { mutableStateOf("") }
+    var accountId by remember(settings.defaultAccountId, accounts) {
+        mutableStateOf(settings.defaultAccountId ?: accounts.firstOrNull()?.id)
+    }
+    var accountMenuExpanded by remember { mutableStateOf(false) }
+    var paymentMethod by remember { mutableStateOf<PaymentMethod?>(null) }
+    var paymentMethodMenuExpanded by remember { mutableStateOf(false) }
     var selectedDate by remember { mutableStateOf(initialDate ?: LocalDate.now()) }
     var showDatePicker by remember { mutableStateOf(false) }
     var showMoreInfo by remember { mutableStateOf(false) }
@@ -158,8 +165,8 @@ fun ManualExpenseScreen(
             category = expense.category
             description = expense.description.orEmpty()
             notes = expense.notes.orEmpty()
-            account = expense.account.orEmpty()
-            paymentMethod = expense.paymentMethod.orEmpty()
+            accountId = expense.accountId
+            paymentMethod = expense.paymentMethod
             selectedDate = localDateOf(expense.occurredAtEpochMillis, expense.timeZoneId)
             prefilled = true
         }
@@ -177,7 +184,7 @@ fun ManualExpenseScreen(
             amountMinorUnits = minorUnits,
             currencyCode = currencyCode,
             category = category.ifBlank { defaultCategory },
-            account = account,
+            accountId = accountId,
             paymentMethod = paymentMethod,
             description = description,
             notes = notes,
@@ -407,11 +414,60 @@ fun ManualExpenseScreen(
                             .clip(RoundedCornerShape(20.dp))
                             .background(MaterialTheme.colorScheme.surfaceContainer)
                     ) {
-                        FormRow(label = stringResource(R.string.manual_add_account)) {
-                            InlineValueField(value = account, onValueChange = { account = it }, modifier = Modifier.weight(1f))
+                        val selectedAccount = accounts.find { it.id == accountId }
+                        Box {
+                            FormRow(label = stringResource(R.string.manual_add_account), onClick = { accountMenuExpanded = true }) {
+                                Text(
+                                    selectedAccount?.name ?: stringResource(R.string.manual_add_no_account),
+                                    style = MaterialTheme.typography.bodyMedium
+                                )
+                                Icon(Icons.Filled.KeyboardArrowDown, contentDescription = null, modifier = Modifier.padding(start = 4.dp))
+                            }
+                            DropdownMenu(expanded = accountMenuExpanded, onDismissRequest = { accountMenuExpanded = false }) {
+                                accounts.forEach { entity ->
+                                    DropdownMenuItem(
+                                        text = { Text(entity.name) },
+                                        onClick = {
+                                            accountId = entity.id
+                                            // The method the user had picked may not exist on the
+                                            // account they just moved to - a wallet offers none at
+                                            // all - so it is dropped rather than silently kept.
+                                            paymentMethod = paymentMethod?.takeIf { it in entity.paymentMethods }
+                                            accountMenuExpanded = false
+                                        }
+                                    )
+                                }
+                            }
                         }
-                        FormRow(label = stringResource(R.string.manual_add_payment_method), isLast = true) {
-                            InlineValueField(value = paymentMethod, onValueChange = { paymentMethod = it }, modifier = Modifier.weight(1f))
+                        // A cash wallet has no payment method, so the row is not shown at all
+                        // rather than shown empty and unfillable.
+                        if (!selectedAccount?.paymentMethods.isNullOrEmpty()) {
+                            Box {
+                                FormRow(
+                                    label = stringResource(R.string.manual_add_payment_method),
+                                    onClick = { paymentMethodMenuExpanded = true },
+                                    isLast = true
+                                ) {
+                                    Text(
+                                        paymentMethod?.let { stringResource(it.labelRes()) }
+                                            ?: stringResource(R.string.manual_add_no_payment_method),
+                                        style = MaterialTheme.typography.bodyMedium
+                                    )
+                                    Icon(Icons.Filled.KeyboardArrowDown, contentDescription = null, modifier = Modifier.padding(start = 4.dp))
+                                }
+                                DropdownMenu(expanded = paymentMethodMenuExpanded, onDismissRequest = { paymentMethodMenuExpanded = false }) {
+                                    DropdownMenuItem(
+                                        text = { Text(stringResource(R.string.manual_add_no_payment_method)) },
+                                        onClick = { paymentMethod = null; paymentMethodMenuExpanded = false }
+                                    )
+                                    selectedAccount?.paymentMethods?.forEach { method ->
+                                        DropdownMenuItem(
+                                            text = { Text(stringResource(method.labelRes())) },
+                                            onClick = { paymentMethod = method; paymentMethodMenuExpanded = false }
+                                        )
+                                    }
+                                }
+                            }
                         }
                     }
                 }

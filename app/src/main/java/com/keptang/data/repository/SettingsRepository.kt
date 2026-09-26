@@ -70,7 +70,8 @@ data class AppSettings(
     val profileName: String = "",
     val currencyCode: String = Defaults.CURRENCY_CODE,
     val timeZoneId: String = Defaults.TIME_ZONE_ID,
-    val defaultAccount: String = Defaults.DEFAULT_ACCOUNT,
+    /** Id of the [com.keptang.data.db.AccountEntity] new expenses land on. Null until the user picks one, which the first account then stands in for. */
+    val defaultAccountId: String? = null,
     val audioRetentionDays: Int = Defaults.AUDIO_RETENTION_DAYS,
     val languageCode: String = Defaults.LANGUAGE_CODE,
     val colorTheme: ColorTheme = ColorTheme.SYSTEM,
@@ -85,7 +86,7 @@ class SettingsRepository(private val context: Context) {
         val PROFILE_NAME = stringPreferencesKey("profile_name")
         val CURRENCY = stringPreferencesKey("currency_code")
         val TIME_ZONE = stringPreferencesKey("time_zone_id")
-        val ACCOUNT = stringPreferencesKey("default_account")
+        val DEFAULT_ACCOUNT_ID = stringPreferencesKey("default_account_id")
         val RETENTION_DAYS = intPreferencesKey("audio_retention_days")
         val LANGUAGE = stringPreferencesKey("language_code")
         val COLOR_THEME = stringPreferencesKey("color_theme")
@@ -98,7 +99,7 @@ class SettingsRepository(private val context: Context) {
             profileName = prefs[Keys.PROFILE_NAME] ?: "",
             currencyCode = prefs[Keys.CURRENCY] ?: Defaults.CURRENCY_CODE,
             timeZoneId = prefs[Keys.TIME_ZONE] ?: Defaults.TIME_ZONE_ID,
-            defaultAccount = prefs[Keys.ACCOUNT] ?: Defaults.DEFAULT_ACCOUNT,
+            defaultAccountId = prefs[Keys.DEFAULT_ACCOUNT_ID],
             audioRetentionDays = prefs[Keys.RETENTION_DAYS] ?: Defaults.AUDIO_RETENTION_DAYS,
             languageCode = prefs[Keys.LANGUAGE] ?: Defaults.LANGUAGE_CODE,
             colorTheme = ColorTheme.parse(prefs[Keys.COLOR_THEME]),
@@ -113,7 +114,7 @@ class SettingsRepository(private val context: Context) {
 
     suspend fun setTimeZone(id: String) = context.dataStore.edit { it[Keys.TIME_ZONE] = id }
 
-    suspend fun setDefaultAccount(account: String) = context.dataStore.edit { it[Keys.ACCOUNT] = account }
+    suspend fun setDefaultAccountId(accountId: String) = context.dataStore.edit { it[Keys.DEFAULT_ACCOUNT_ID] = accountId }
 
     suspend fun setAudioRetentionDays(days: Int) = context.dataStore.edit { it[Keys.RETENTION_DAYS] = days }
 

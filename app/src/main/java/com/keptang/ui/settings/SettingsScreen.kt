@@ -66,11 +66,13 @@ import com.keptang.ui.theme.MascotOutlineWidth
 fun SettingsScreen(
     onOpenInbox: () -> Unit,
     onEditCategories: () -> Unit,
+    onOpenProfile: () -> Unit,
     viewModel: SettingsViewModel = viewModel(factory = SettingsViewModel.Factory)
 ) {
     val settings by viewModel.settings.collectAsStateWithLifecycle()
     val isSeedingDemoData by viewModel.isSeedingDemoData.collectAsStateWithLifecycle()
     val attentionCount by ServiceLocator.attentionCount.collectAsStateWithLifecycle()
+    val accounts by viewModel.accounts.collectAsStateWithLifecycle()
     var profileName by remember(settings.profileName) { mutableStateOf(settings.profileName) }
     val context = LocalContext.current
 
@@ -87,7 +89,8 @@ fun SettingsScreen(
             name = profileName,
             onNameChange = { profileName = it; viewModel.setProfileName(it) },
             currencyCode = settings.currencyCode,
-            defaultAccount = settings.defaultAccount,
+            accountCount = accounts.size,
+            onOpenProfile = onOpenProfile,
             modifier = Modifier.padding(top = 16.dp)
         )
 
@@ -98,12 +101,6 @@ fun SettingsScreen(
                 selected = settings.currencyCode,
                 defaultValue = Defaults.CURRENCY_CODE,
                 onSelect = viewModel::setCurrency
-            )
-            OutlinedTextField(
-                value = settings.defaultAccount,
-                onValueChange = viewModel::setDefaultAccount,
-                label = { Text(stringResource(R.string.settings_default_account)) },
-                modifier = Modifier.fillMaxWidth().padding(top = 16.dp)
             )
             SettingsDropdown(
                 label = stringResource(R.string.settings_time_zone),
@@ -245,10 +242,11 @@ private fun ProfileCard(
     name: String,
     onNameChange: (String) -> Unit,
     currencyCode: String,
-    defaultAccount: String,
+    accountCount: Int,
+    onOpenProfile: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    InfoCard(modifier.fillMaxWidth()) {
+    InfoCard(modifier.fillMaxWidth(), onClick = onOpenProfile) {
         Row(Modifier.fillMaxWidth().padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
             Box(
                 modifier = Modifier.size(56.dp).clip(CircleShape).background(MaterialTheme.colorScheme.primaryContainer),
@@ -270,7 +268,7 @@ private fun ProfileCard(
                     modifier = Modifier.fillMaxWidth()
                 )
                 Text(
-                    "$currencyCode · $defaultAccount",
+                    "$currencyCode · " + pluralStringResource(R.plurals.settings_profile_accounts, accountCount, accountCount),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(top = 6.dp, start = 4.dp)

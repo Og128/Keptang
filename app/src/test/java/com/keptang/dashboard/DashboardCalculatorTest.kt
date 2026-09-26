@@ -28,7 +28,7 @@ class DashboardCalculatorTest {
         occurredAtEpochMillis = date.atTime(12, 0).atZone(zone).toInstant().toEpochMilli(),
         timeZoneId = zone.id,
         category = category,
-        account = null,
+        accountId = null,
         paymentMethod = null,
         description = null,
         confidence = 1f,

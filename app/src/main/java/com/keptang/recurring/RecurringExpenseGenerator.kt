@@ -1,6 +1,7 @@
 package com.keptang.recurring
 
 import androidx.room.withTransaction
+import com.keptang.account.AccountResolver
 import com.keptang.data.db.KeptangDatabase
 import com.keptang.data.db.RecurringExpenseEntity
 import com.keptang.data.repository.CaptureRepository
@@ -22,7 +23,8 @@ class RecurringExpenseGenerator(
     private val database: KeptangDatabase,
     private val recurringExpenseRepository: RecurringExpenseRepository,
     private val captureRepository: CaptureRepository,
-    private val expenseRepository: ExpenseRepository
+    private val expenseRepository: ExpenseRepository,
+    private val accountResolver: AccountResolver
 ) {
 
     suspend fun generateDueExpenses(timeZoneId: String, currencyCode: String) {
@@ -58,7 +60,9 @@ class RecurringExpenseGenerator(
             occurredAtEpochMillis = dueDate.atStartOfDay(ZoneId.of(timeZoneId)).toInstant().toEpochMilli(),
             timeZoneId = timeZoneId,
             category = recurring.category,
-            account = null,
+            // A subscription is charged somewhere; the default account is the only honest guess,
+            // and the payment method stays unknown rather than being invented.
+            accountId = accountResolver.defaultAccount()?.id,
             paymentMethod = null,
             description = recurring.name,
             recurringExpenseId = recurring.id

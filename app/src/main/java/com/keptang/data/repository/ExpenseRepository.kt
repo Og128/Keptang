@@ -1,10 +1,12 @@
 package com.keptang.data.repository
 
 import androidx.room.withTransaction
+import com.keptang.account.AccountResolver
 import com.keptang.data.db.CaptureDao
 import com.keptang.data.db.ExpenseDao
 import com.keptang.data.db.ExpenseEntity
 import com.keptang.data.db.KeptangDatabase
+import com.keptang.data.db.PaymentMethod
 import com.keptang.data.db.ReviewStatus
 import com.keptang.parser.ParsedExpense
 import kotlinx.coroutines.flow.Flow
@@ -14,7 +16,8 @@ import java.util.UUID
 class ExpenseRepository(
     private val database: KeptangDatabase,
     private val expenseDao: ExpenseDao,
-    private val captureDao: CaptureDao
+    private val captureDao: CaptureDao,
+    private val accountResolver: AccountResolver
 ) {
 
     fun observeAll(): Flow<List<ExpenseEntity>> = expenseDao.observeAll()
@@ -42,6 +45,9 @@ class ExpenseRepository(
     suspend fun saveParsedExpenses(captureId: String, parsed: List<ParsedExpense>): List<ExpenseEntity> {
         val now = Instant.now().toEpochMilli()
         val entities = parsed.map { p ->
+            // The parser reports what was said ("HSBC", "cash"); only here, with the account
+            // table in reach, does that become an account to charge. See [AccountResolver].
+            val resolved = accountResolver.resolve(p.account, p.paymentMethod)
             ExpenseEntity(
                 id = p.id,
                 captureId = captureId,
@@ -50,8 +56,8 @@ class ExpenseRepository(
                 occurredAtEpochMillis = p.occurredAt.toInstant().toEpochMilli(),
                 timeZoneId = p.occurredAt.zone.id,
                 category = p.category,
-                account = p.account,
-                paymentMethod = p.paymentMethod,
+                accountId = resolved.accountId,
+                paymentMethod = resolved.paymentMethod,
                 description = p.description,
                 confidence = p.confidence,
                 reviewStatus = if (p.needsReview) ReviewStatus.NEEDS_REVIEW else ReviewStatus.APPROVED,
@@ -71,8 +77,8 @@ class ExpenseRepository(
         occurredAtEpochMillis: Long,
         timeZoneId: String,
         category: String,
-        account: String?,
-        paymentMethod: String?,
+        accountId: String?,
+        paymentMethod: PaymentMethod?,
         description: String?,
         notes: String? = null,
         recurringExpenseId: String? = null
@@ -86,7 +92,7 @@ class ExpenseRepository(
             occurredAtEpochMillis = occurredAtEpochMillis,
             timeZoneId = timeZoneId,
             category = category,
-            account = account,
+            accountId = accountId,
             paymentMethod = paymentMethod,
             description = description,
             notes = notes,

@@ -31,7 +31,9 @@ class ExpenseParser {
         captureId: String,
         referenceDateTime: ZonedDateTime,
         languageCode: String = "en",
-        vocabulary: CategoryVocabulary = CategoryVocabulary.EMPTY
+        vocabulary: CategoryVocabulary = CategoryVocabulary.EMPTY,
+        /** The names of the accounts that exist, so a bare "on HSBC" can be recognised. See [AccountExtractor]. */
+        accountNames: List<String> = emptyList()
     ): List<ParsedExpense> {
         val segments = splitIntoClauses(transcript, languageCode)
         val today: LocalDate = referenceDateTime.toLocalDate()
@@ -55,9 +57,9 @@ class ExpenseParser {
             val amount = AmountExtractor.extract(segment, languageCode) ?: continue
 
             val category = CategoryRules.classify(segment, languageCode, vocabulary)
-            val account = AccountExtractor.extract(segment, languageCode)
+            val account = AccountExtractor.extract(segment, languageCode, accountNames)
             val paymentMethod = PaymentMethodExtractor.extract(segment, languageCode)
-            val description = DescriptionExtractor.extract(segment, languageCode)
+            val description = DescriptionExtractor.extract(segment, languageCode, accountNames)
             val confidence = ConfidenceScorer.score(hasCategory = category != null)
 
             val occurredAt = currentDate

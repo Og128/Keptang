@@ -23,7 +23,7 @@ class BudgetCalculatorTest {
         category: String,
         date: LocalDate,
         currencyCode: String = defaultCurrency,
-        account: String? = null
+        accountId: String? = null
     ) = ExpenseEntity(
         id = UUID.randomUUID().toString(),
         captureId = "capture",
@@ -32,7 +32,7 @@ class BudgetCalculatorTest {
         occurredAtEpochMillis = date.atTime(12, 0).atZone(zone).toInstant().toEpochMilli(),
         timeZoneId = zone.id,
         category = category,
-        account = account,
+        accountId = accountId,
         paymentMethod = null,
         description = null,
         confidence = 1f,
@@ -135,8 +135,8 @@ class BudgetCalculatorTest {
     fun `account differences never affect totals since budgets pool across accounts`() {
         val overall = budget(category = null, periodAnchor = 1)
         val expenses = listOf(
-            expense(500, "Coffee", LocalDate.of(2026, 9, 5), account = "Cash"),
-            expense(300, "Coffee", LocalDate.of(2026, 9, 5), account = "Kasikorn")
+            expense(500, "Coffee", LocalDate.of(2026, 9, 5), accountId = "acc-cash"),
+            expense(300, "Coffee", LocalDate.of(2026, 9, 5), accountId = "acc-kasikorn")
         )
 
         val snapshot = BudgetCalculator.compute(listOf(overall), expenses, defaultCurrency, today)

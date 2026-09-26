@@ -5,7 +5,10 @@ import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.keptang.data.db.CaptureStatus
 import com.keptang.data.db.KeptangDatabase
+import com.keptang.account.AccountResolver
+import com.keptang.data.repository.AccountRepository
 import com.keptang.data.repository.CaptureRepository
+import com.keptang.data.repository.SettingsRepository
 import com.keptang.data.repository.ExpenseRepository
 import com.keptang.parser.ExpenseParser
 import com.keptang.transcription.FakeTranscriptionProvider
@@ -42,8 +45,16 @@ class CaptureProcessorInstrumentedTest {
         db = Room.inMemoryDatabaseBuilder(context, KeptangDatabase::class.java)
             .allowMainThreadQueries()
             .build()
-        expenseRepository = ExpenseRepository(db, db.expenseDao(), db.captureDao())
         captureRepository = CaptureRepository(db.captureDao(), AudioFileStore(context))
+        // An in-memory database is created at the current version, so the seed callback has put
+        // a cash wallet in it; the resolver reads real accounts out of that, not stubs.
+        val accountRepository = AccountRepository(db.accountDao(), db.accountTransferDao(), db.expenseDao())
+        expenseRepository = ExpenseRepository(
+            db,
+            db.expenseDao(),
+            db.captureDao(),
+            AccountResolver(accountRepository, SettingsRepository(context))
+        )
         fakeProvider = FakeTranscriptionProvider()
         processor = CaptureProcessor(captureRepository, expenseRepository, fakeProvider, ExpenseParser())
         audioFile = File(context.filesDir, "test-${UUID.randomUUID()}.wav").apply { writeText("fake-audio") }

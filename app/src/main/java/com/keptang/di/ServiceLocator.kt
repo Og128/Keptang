@@ -6,6 +6,8 @@ import com.keptang.capture.CaptureProcessor
 import com.keptang.data.db.CaptureStatus
 import com.keptang.data.db.KeptangDatabase
 import com.keptang.data.repository.AppSettings
+import com.keptang.account.AccountResolver
+import com.keptang.data.repository.AccountRepository
 import com.keptang.data.repository.BudgetRepository
 import com.keptang.data.repository.CaptureRepository
 import com.keptang.data.repository.CategoryRepository
@@ -69,7 +71,7 @@ object ServiceLocator {
     }
 
     val expenseRepository: ExpenseRepository by lazy {
-        ExpenseRepository(database, database.expenseDao(), database.captureDao())
+        ExpenseRepository(database, database.expenseDao(), database.captureDao(), accountResolver)
     }
 
     val budgetRepository: BudgetRepository by lazy { BudgetRepository(database.budgetDao()) }
@@ -88,12 +90,18 @@ object ServiceLocator {
 
     val tagRepository: TagRepository by lazy { TagRepository(database.tagDao()) }
 
+    val accountResolver: AccountResolver by lazy { AccountResolver(accountRepository, settingsRepository) }
+
+    val accountRepository: AccountRepository by lazy {
+        AccountRepository(database.accountDao(), database.accountTransferDao(), database.expenseDao())
+    }
+
     val learnedCategoryRepository: LearnedCategoryRepository by lazy {
         LearnedCategoryRepository(database.learnedCategoryDao())
     }
 
     val recurringExpenseGenerator: RecurringExpenseGenerator by lazy {
-        RecurringExpenseGenerator(database, recurringExpenseRepository, captureRepository, expenseRepository)
+        RecurringExpenseGenerator(database, recurringExpenseRepository, captureRepository, expenseRepository, accountResolver)
     }
 
     /**
@@ -131,7 +139,8 @@ object ServiceLocator {
                     learned = learnedCategoryRepository.asVocabulary(),
                     categoryNames = categoryRepository.getAllNames()
                 )
-            }
+            },
+            accountNamesProvider = { accountRepository.getAll().map { it.name } }
         )
     }
 }

@@ -7,7 +7,6 @@ object Defaults {
 
     /** The only audio retention lengths offered in Settings. */
     val AUDIO_RETENTION_OPTIONS = listOf(1, 3, 7)
-    const val DEFAULT_ACCOUNT = "Cash"
     const val LANGUAGE_CODE = "en"
 
     /**

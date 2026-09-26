@@ -5,9 +5,11 @@ import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.keptang.core.Defaults
+import com.keptang.data.db.AccountEntity
 import com.keptang.data.db.CategoryEntity
 import com.keptang.data.db.ExpenseEntity
 import com.keptang.data.db.RecurringExpenseEntity
+import com.keptang.data.repository.AccountRepository
 import com.keptang.data.repository.CategoryRepository
 import com.keptang.data.repository.ExpenseRepository
 import com.keptang.data.repository.RecurringExpenseRepository
@@ -24,7 +26,8 @@ class ExpensesViewModel(
     categoryRepository: CategoryRepository,
     settingsRepository: SettingsRepository,
     recurringExpenseRepository: RecurringExpenseRepository,
-    tagRepository: TagRepository
+    tagRepository: TagRepository,
+    accountRepository: AccountRepository
 ) : ViewModel() {
 
     val expenses: StateFlow<List<ExpenseEntity>> = expenseRepository.observeApproved()
@@ -38,6 +41,11 @@ class ExpensesViewModel(
     /** Recurring expense id -> its definition, so the ledger can badge rows it generated. */
     val recurringById: StateFlow<Map<String, RecurringExpenseEntity>> = recurringExpenseRepository.observeAll()
         .map { recurring -> recurring.associateBy { it.id } }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyMap())
+
+    /** Account id -> the account, so a ledger row can name the account it was paid from. */
+    val accountsById: StateFlow<Map<String, AccountEntity>> = accountRepository.observeAll()
+        .map { accounts -> accounts.associateBy { it.id } }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyMap())
 
     val timeZoneId: StateFlow<String> = settingsRepository.settings
@@ -60,7 +68,8 @@ class ExpensesViewModel(
                     ServiceLocator.categoryRepository,
                     ServiceLocator.settingsRepository,
                     ServiceLocator.recurringExpenseRepository,
-                    ServiceLocator.tagRepository
+                    ServiceLocator.tagRepository,
+                    ServiceLocator.accountRepository
                 )
             }
         }

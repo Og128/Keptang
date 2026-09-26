@@ -55,11 +55,13 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.keptang.ui.theme.MascotRole
 import com.keptang.ui.theme.mascotFor
 import com.keptang.R
+import com.keptang.data.db.AccountEntity
 import com.keptang.data.db.CategoryEntity
 import com.keptang.data.db.ExpenseEntity
 import com.keptang.data.db.RecurringExpenseEntity
 import com.keptang.parser.UNCATEGORIZED
 import com.keptang.ui.common.MoneyText
+import com.keptang.ui.common.labelRes
 import com.keptang.ui.common.formatDateHeader
 import com.keptang.ui.common.formatMoney
 import com.keptang.ui.common.localDateOf
@@ -85,6 +87,7 @@ fun ExpensesScreen(
     val expenses by viewModel.expenses.collectAsStateWithLifecycle()
     val categoriesByName by viewModel.categoriesByName.collectAsStateWithLifecycle()
     val recurringById by viewModel.recurringById.collectAsStateWithLifecycle()
+    val accountsById by viewModel.accountsById.collectAsStateWithLifecycle()
     val timeZoneId by viewModel.timeZoneId.collectAsStateWithLifecycle()
     val allTagNames by viewModel.allTagNames.collectAsStateWithLifecycle()
     val tagsByExpenseId by viewModel.tagsByExpenseId.collectAsStateWithLifecycle()
@@ -161,7 +164,7 @@ fun ExpensesScreen(
                 when {
                     searchedExpenses.isEmpty() -> EmptyState(stringResource(R.string.expenses_empty))
                     monthExpenses.isEmpty() -> EmptyState(stringResource(R.string.expenses_empty_period))
-                    else -> ExpensesLedger(monthExpenses, categoriesByName, recurringById, timeZoneId, onEditExpense)
+                    else -> ExpensesLedger(monthExpenses, categoriesByName, recurringById, accountsById, timeZoneId, onEditExpense)
                 }
             }
             ExpensesViewMode.CALENDAR -> ExpenseCalendarView(
@@ -331,6 +334,7 @@ private fun ExpensesLedger(
     expenses: List<ExpenseEntity>,
     categoriesByName: Map<String, CategoryEntity>,
     recurringById: Map<String, RecurringExpenseEntity>,
+    accountsById: Map<String, AccountEntity>,
     timeZoneId: String,
     onEditExpense: (String) -> Unit
 ) {
@@ -351,6 +355,7 @@ private fun ExpensesLedger(
                         expense,
                         categoriesByName[expense.category],
                         recurring = expense.recurringExpenseId?.let { recurringById[it] },
+                        account = expense.accountId?.let { accountsById[it] },
                         onClick = { onEditExpense(expense.id) }
                     )
                 }
@@ -388,7 +393,13 @@ internal fun CategoryTag(category: CategoryEntity?) {
 }
 
 @Composable
-internal fun ExpenseCard(expense: ExpenseEntity, category: CategoryEntity?, recurring: RecurringExpenseEntity? = null, onClick: () -> Unit) {
+internal fun ExpenseCard(
+    expense: ExpenseEntity,
+    category: CategoryEntity?,
+    recurring: RecurringExpenseEntity? = null,
+    account: AccountEntity? = null,
+    onClick: () -> Unit
+) {
     val color = category?.let { CategoryColors.parse(it.colorHex) } ?: MaterialTheme.colorScheme.outline
     Column(Modifier.fillMaxWidth()) {
         Row(
@@ -409,8 +420,8 @@ internal fun ExpenseCard(expense: ExpenseEntity, category: CategoryEntity?, recu
                 )
                 val extra = listOfNotNull(
                     recurring?.let { recurringFrequencyLabel(it) },
-                    expense.account,
-                    expense.paymentMethod
+                    account?.name,
+                    expense.paymentMethod?.let { stringResource(it.labelRes()) }
                 ).joinToString(" · ")
                 if (extra.isNotBlank()) {
                     Text(

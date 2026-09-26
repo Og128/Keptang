@@ -4,10 +4,13 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
+import com.keptang.data.db.AccountEntity
 import com.keptang.data.db.CategoryEntity
 import com.keptang.data.db.ExpenseEntity
 import com.keptang.data.repository.AppSettings
 import com.keptang.data.db.BudgetPeriodType
+import com.keptang.data.db.PaymentMethod
+import com.keptang.data.repository.AccountRepository
 import com.keptang.data.repository.CaptureRepository
 import com.keptang.data.repository.CategoryRepository
 import com.keptang.data.repository.ExpenseRepository
@@ -33,11 +36,15 @@ class ManualExpenseViewModel(
     private val recurringExpenseGenerator: RecurringExpenseGenerator,
     private val tagRepository: TagRepository,
     private val learnedCategoryRepository: LearnedCategoryRepository,
+    accountRepository: AccountRepository,
     private val expenseId: String?
 ) : ViewModel() {
 
     val settings: StateFlow<AppSettings> = settingsRepository.settings
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), AppSettings())
+
+    val accounts: StateFlow<List<AccountEntity>> = accountRepository.observeAll()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     val categories: StateFlow<List<CategoryEntity>> = categoryRepository.observeAll()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
@@ -79,8 +86,8 @@ class ManualExpenseViewModel(
         amountMinorUnits: Long,
         currencyCode: String,
         category: String,
-        account: String?,
-        paymentMethod: String?,
+        accountId: String?,
+        paymentMethod: PaymentMethod?,
         description: String?,
         notes: String?,
         timeZoneId: String,
@@ -100,8 +107,8 @@ class ManualExpenseViewModel(
                         occurredAtEpochMillis = occurredAtEpochMillis,
                         timeZoneId = timeZoneId,
                         category = category,
-                        account = account?.takeIf { it.isNotBlank() },
-                        paymentMethod = paymentMethod?.takeIf { it.isNotBlank() },
+                        accountId = accountId,
+                        paymentMethod = paymentMethod,
                         description = description?.takeIf { it.isNotBlank() },
                         notes = notes?.takeIf { it.isNotBlank() }
                     )
@@ -116,8 +123,8 @@ class ManualExpenseViewModel(
                     occurredAtEpochMillis = occurredAtEpochMillis,
                     timeZoneId = timeZoneId,
                     category = category,
-                    account = account?.takeIf { it.isNotBlank() },
-                    paymentMethod = paymentMethod?.takeIf { it.isNotBlank() },
+                    accountId = accountId,
+                    paymentMethod = paymentMethod,
                     description = description?.takeIf { it.isNotBlank() },
                     notes = notes?.takeIf { it.isNotBlank() }
                 )
@@ -188,6 +195,7 @@ class ManualExpenseViewModel(
                     ServiceLocator.recurringExpenseGenerator,
                     ServiceLocator.tagRepository,
                     ServiceLocator.learnedCategoryRepository,
+                    ServiceLocator.accountRepository,
                     expenseId
                 )
             }

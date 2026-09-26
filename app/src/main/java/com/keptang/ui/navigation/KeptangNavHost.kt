@@ -50,6 +50,7 @@ import com.keptang.ui.budgets.BudgetFormScreen
 import com.keptang.ui.budgets.BudgetsScreen
 import com.keptang.ui.capturedetail.CaptureDetailScreen
 import com.keptang.ui.categories.CategoriesScreen
+import com.keptang.ui.profile.ProfileScreen
 import com.keptang.ui.categories.CategoryEditScreen
 import com.keptang.ui.dashboard.DashboardScreen
 import com.keptang.ui.expenses.ExpensesScreen
@@ -71,6 +72,7 @@ object Routes {
     const val BUDGET_ADD = "budget_add"
     const val BUDGET_EDIT = "budget_edit/{budgetId}"
     const val CATEGORIES = "categories"
+    const val PROFILE = "profile"
     const val CATEGORY_ADD = "category_add"
     const val CATEGORY_EDIT = "category_edit/{categoryName}"
     const val RECURRING_EDIT = "recurring_edit/{recurringId}"
@@ -158,9 +160,11 @@ fun KeptangNavHost(
             composable(Routes.SETTINGS) {
                 SettingsScreen(
                     onOpenInbox = { navController.navigate(Routes.INBOX) },
-                    onEditCategories = { navController.navigate(Routes.CATEGORIES) }
+                    onEditCategories = { navController.navigate(Routes.CATEGORIES) },
+                    onOpenProfile = { navController.navigate(Routes.PROFILE) }
                 )
             }
+            composable(Routes.PROFILE) { ProfileScreen() }
             composable(Routes.CATEGORIES) {
                 CategoriesScreen(
                     onAddCategory = { navController.navigate(Routes.CATEGORY_ADD) },

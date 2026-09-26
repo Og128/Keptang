@@ -1,6 +1,7 @@
 package com.keptang.export
 
 import com.keptang.data.db.ExpenseEntity
+import com.keptang.data.db.PaymentMethod
 import com.keptang.data.db.ReviewStatus
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -27,8 +28,8 @@ class CsvExporterTest {
         currencyCode: String = "THB",
         category: String = "Coffee",
         description: String? = "Coffee shop",
-        account: String? = "Cash",
-        paymentMethod: String? = null,
+        accountId: String? = "acc-cash",
+        paymentMethod: PaymentMethod? = null,
         notes: String? = null
     ) = ExpenseEntity(
         id = id,
@@ -38,7 +39,7 @@ class CsvExporterTest {
         occurredAtEpochMillis = epochOf(date),
         timeZoneId = zone,
         category = category,
-        account = account,
+        accountId = accountId,
         paymentMethod = paymentMethod,
         description = description,
         notes = notes,
@@ -50,7 +51,9 @@ class CsvExporterTest {
 
     @Test
     fun buildsHeaderAndOneRowPerExpense() {
-        val csv = CsvExporter.buildCsv(listOf(expense("e1")), emptyMap())
+        // The export names the account rather than printing its id, which is meaningless to
+        // whoever opens the file.
+        val csv = CsvExporter.buildCsv(listOf(expense("e1")), emptyMap(), mapOf("acc-cash" to "Cash"))
 
         val lines = csv.split("\r\n")
         assertEquals(2, lines.size)
@@ -97,7 +100,7 @@ class CsvExporterTest {
     @Test
     fun keepsRowsAlignedWhenOptionalFieldsAreMissing() {
         val csv = CsvExporter.buildCsv(
-            listOf(expense("e1", description = null, account = null, paymentMethod = null, notes = null)),
+            listOf(expense("e1", description = null, accountId = null, paymentMethod = null, notes = null)),
             emptyMap()
         )
 

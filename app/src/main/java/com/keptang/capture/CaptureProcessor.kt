@@ -50,7 +50,8 @@ class CaptureProcessor(
      * Read fresh on every parse rather than captured once: the user can create a category or
      * correct one between two captures, and the very next sentence should already benefit.
      */
-    private val vocabularyProvider: suspend () -> CategoryVocabulary = { CategoryVocabulary.EMPTY }
+    private val vocabularyProvider: suspend () -> CategoryVocabulary = { CategoryVocabulary.EMPTY },
+    private val accountNamesProvider: suspend () -> List<String> = { emptyList() }
 ) {
 
     /** Used by the service right after recording, when a live [TranscriptionResult] is already in hand. */
@@ -109,7 +110,14 @@ class CaptureProcessor(
     private suspend fun finalizeSuccess(captureId: String, transcript: String): ProcessOutcome {
         captureRepository.markParsing(captureId, transcript)
         val now = ZonedDateTime.now(zoneId)
-        val parsed = expenseParser.parse(transcript, captureId, now, languageCodeProvider(), vocabularyProvider())
+        val parsed = expenseParser.parse(
+            transcript,
+            captureId,
+            now,
+            languageCodeProvider(),
+            vocabularyProvider(),
+            accountNamesProvider()
+        )
         expenseRepository.saveParsedExpenses(captureId, parsed)
 
         return when {
