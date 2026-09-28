@@ -72,11 +72,13 @@ object Routes {
     const val BUDGET_ADD = "budget_add"
     const val BUDGET_EDIT = "budget_edit/{budgetId}"
     const val CATEGORIES = "categories"
-    const val PROFILE = "profile"
+    const val PROFILE = "profile?add={add}"
     const val CATEGORY_ADD = "category_add"
     const val CATEGORY_EDIT = "category_edit/{categoryName}"
     const val RECURRING_EDIT = "recurring_edit/{recurringId}"
 
+    /** [startAdding] opens the create-account dialog straight away, for the "Add account" row in Settings. */
+    fun profile(startAdding: Boolean = false) = if (startAdding) "profile?add=true" else "profile"
     fun inbox(showReview: Boolean = false) = if (showReview) "inbox?tab=review" else "inbox"
     fun captureDetail(captureId: String) = "capture/$captureId"
     fun addExpense(date: LocalDate?) = if (date != null) "add_expense?date=$date" else "add_expense"
@@ -161,10 +163,13 @@ fun KeptangNavHost(
                 SettingsScreen(
                     onOpenInbox = { navController.navigate(Routes.INBOX) },
                     onEditCategories = { navController.navigate(Routes.CATEGORIES) },
-                    onOpenProfile = { navController.navigate(Routes.PROFILE) }
+                    onOpenProfile = { navController.navigate(Routes.profile()) },
+                    onAddAccount = { navController.navigate(Routes.profile(startAdding = true)) }
                 )
             }
-            composable(Routes.PROFILE) { ProfileScreen() }
+            composable(Routes.PROFILE) { backStack ->
+                ProfileScreen(startAdding = backStack.arguments?.getString("add") == "true")
+            }
             composable(Routes.CATEGORIES) {
                 CategoriesScreen(
                     onAddCategory = { navController.navigate(Routes.CATEGORY_ADD) },

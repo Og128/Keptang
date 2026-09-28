@@ -143,12 +143,10 @@
     <string name="manual_add_account">Account</string>
     <string name="manual_add_payment_method">Payment method</string>
     <string name="profile_title">Profile</string>
-    <plurals name="settings_profile_accounts">
-        <item quantity="one">%1$d account</item>
-        <item quantity="other">%1$d accounts</item>
-    </plurals>
     <string name="profile_accounts_title">Accounts</string>
     <string name="profile_add_account">Add account</string>
+    <string name="profile_first_account_title">Add your first account</string>
+    <string name="profile_first_account_body">The accounts you pay from - K-bank, TTBK, HSBC. Pick one when you add an expense instead of picking card or QR.</string>
     <string name="profile_account_name_label">Account name</string>
     <string name="profile_account_kind_bank">Bank</string>
     <string name="profile_account_kind_cash">Cash wallet</string>

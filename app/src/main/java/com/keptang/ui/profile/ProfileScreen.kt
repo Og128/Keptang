@@ -6,6 +6,8 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -21,7 +23,7 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.FilterChip
-import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
@@ -37,6 +39,10 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.graphics.PathEffect
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
@@ -62,6 +68,8 @@ import com.keptang.ui.theme.CategoryColors
  */
 @Composable
 fun ProfileScreen(
+    /** Opens the create dialog on arrival, so the "Add account" row in Settings lands on the form, not on a list. */
+    startAdding: Boolean = false,
     viewModel: ProfileViewModel = viewModel(factory = ProfileViewModel.Factory)
 ) {
     val settings by viewModel.settings.collectAsStateWithLifecycle()
@@ -71,7 +79,7 @@ fun ProfileScreen(
 
     var profileName by remember(settings.profileName) { mutableStateOf(settings.profileName) }
     var editingAccount by remember { mutableStateOf<AccountEntity?>(null) }
-    var showAddAccount by remember { mutableStateOf(false) }
+    var showAddAccount by remember { mutableStateOf(startAdding) }
     var showWithdrawal by remember { mutableStateOf(false) }
     var showCount by remember { mutableStateOf(false) }
 
@@ -81,10 +89,14 @@ fun ProfileScreen(
     Scaffold(
         // Nested inside the NavHost, which the root Scaffold has already inset.
         contentWindowInsets = WindowInsets(0),
+        // Extended rather than a bare "+": a circle in the corner of a screen whose biggest
+        // element is the wallet card reads as "add something", not "add an account".
         floatingActionButton = {
-            FloatingActionButton(onClick = { showAddAccount = true }) {
-                Icon(Icons.Filled.Add, contentDescription = stringResource(R.string.profile_add_account))
-            }
+            ExtendedFloatingActionButton(
+                onClick = { showAddAccount = true },
+                icon = { Icon(Icons.Filled.Add, contentDescription = null) },
+                text = { Text(stringResource(R.string.profile_add_account)) }
+            )
         }
     ) { padding ->
         LazyColumn(Modifier.fillMaxSize().padding(padding).padding(horizontal = 12.dp)) {
@@ -120,6 +132,15 @@ fun ProfileScreen(
                     onClick = { editingAccount = account }
                 )
             }
+            // Until a bank account exists the list is just the wallet, and the screen offers no
+            // reason to believe more can be added. This sits where the eye stops reading.
+            if (accounts.none { it.kind == AccountKind.BANK }) {
+                item {
+                    AddFirstAccountCard(onClick = { showAddAccount = true })
+                }
+            }
+            // Clears the extended FAB, which would otherwise cover the last row.
+            item { Spacer(Modifier.height(88.dp)) }
         }
     }
 
@@ -241,6 +262,49 @@ private fun WalletCard(
                 OutlinedButton(onClick = onCount) { Text(stringResource(R.string.profile_count_cash)) }
             }
         }
+    }
+}
+
+/**
+ * The empty state for the accounts list, dashed so it reads as a slot to fill rather than as
+ * another account already there.
+ */
+@Composable
+private fun AddFirstAccountCard(onClick: () -> Unit) {
+    val outline = MaterialTheme.colorScheme.primary
+    Column(
+        Modifier
+            .fillMaxWidth()
+            .padding(vertical = 6.dp)
+            .clip(MaterialTheme.shapes.medium)
+            .drawBehind {
+                drawRoundRect(
+                    color = outline,
+                    style = Stroke(
+                        width = 2.dp.toPx(),
+                        pathEffect = PathEffect.dashPathEffect(floatArrayOf(12f, 10f))
+                    ),
+                    cornerRadius = CornerRadius(16.dp.toPx())
+                )
+            }
+            .clickable(onClick = onClick)
+            .padding(16.dp)
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Icon(Icons.Filled.Add, contentDescription = null, tint = outline)
+            Text(
+                stringResource(R.string.profile_first_account_title),
+                style = MaterialTheme.typography.titleSmall,
+                color = outline,
+                modifier = Modifier.padding(start = 8.dp)
+            )
+        }
+        Text(
+            stringResource(R.string.profile_first_account_body),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(top = 6.dp)
+        )
     }
 }
 

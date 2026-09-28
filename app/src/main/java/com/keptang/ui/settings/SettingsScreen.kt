@@ -20,6 +20,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.Contrast
 import androidx.compose.material3.Badge
@@ -57,9 +58,11 @@ import com.keptang.ui.theme.mascotFor
 import com.keptang.BuildConfig
 import com.keptang.R
 import com.keptang.core.Defaults
+import com.keptang.data.db.AccountEntity
 import com.keptang.data.repository.ColorTheme
 import com.keptang.di.ServiceLocator
 import com.keptang.ui.common.InfoCard
+import com.keptang.ui.theme.CategoryColors
 import com.keptang.ui.theme.MascotOutlineWidth
 
 @Composable
@@ -67,6 +70,7 @@ fun SettingsScreen(
     onOpenInbox: () -> Unit,
     onEditCategories: () -> Unit,
     onOpenProfile: () -> Unit,
+    onAddAccount: () -> Unit,
     viewModel: SettingsViewModel = viewModel(factory = SettingsViewModel.Factory)
 ) {
     val settings by viewModel.settings.collectAsStateWithLifecycle()
@@ -89,12 +93,26 @@ fun SettingsScreen(
             name = profileName,
             onNameChange = { profileName = it; viewModel.setProfileName(it) },
             currencyCode = settings.currencyCode,
-            accountCount = accounts.size,
             onOpenProfile = onOpenProfile,
             modifier = Modifier.padding(top = 16.dp)
         )
 
-        SettingsSection(stringResource(R.string.settings_section_general), modifier = Modifier.padding(top = 20.dp)) {
+        // The accounts are listed here rather than only summarised on the profile card: "3
+        // accounts" as a subtitle does not tell anyone that the list can be added to, and the
+        // card's tap target was reading as "edit my name".
+        SettingsSection(stringResource(R.string.profile_accounts_title), modifier = Modifier.padding(top = 20.dp)) {
+            accounts.forEachIndexed { index, account ->
+                AccountSummaryRow(
+                    account = account,
+                    isDefault = account.id == (settings.defaultAccountId ?: accounts.firstOrNull()?.id),
+                    onClick = onOpenProfile,
+                    modifier = Modifier.padding(top = if (index == 0) 0.dp else 4.dp)
+                )
+            }
+            AddAccountRow(onClick = onAddAccount, modifier = Modifier.padding(top = if (accounts.isEmpty()) 0.dp else 8.dp))
+        }
+
+        SettingsSection(stringResource(R.string.settings_section_general), modifier = Modifier.padding(top = 16.dp)) {
             SettingsDropdown(
                 label = stringResource(R.string.settings_default_currency),
                 options = Defaults.CURRENCY_OPTIONS,
@@ -237,12 +255,77 @@ private fun SettingsSection(title: String, modifier: Modifier = Modifier, conten
     }
 }
 
+/** One account as Settings shows it: enough to recognise it, tapping opens the Profile to change it. */
+@Composable
+private fun AccountSummaryRow(
+    account: AccountEntity,
+    isDefault: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Row(
+        modifier
+            .fillMaxWidth()
+            .clip(MaterialTheme.shapes.small)
+            .clickable(onClick = onClick)
+            .padding(vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Box(Modifier.size(24.dp).clip(CircleShape).background(CategoryColors.parse(account.colorHex)))
+        Text(
+            account.name,
+            style = MaterialTheme.typography.bodyLarge,
+            modifier = Modifier.weight(1f).padding(start = 12.dp)
+        )
+        if (isDefault) {
+            Text(
+                stringResource(R.string.profile_default_badge),
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.primary,
+                modifier = Modifier
+                    .clip(MaterialTheme.shapes.extraSmall)
+                    .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.12f))
+                    .padding(horizontal = 8.dp, vertical = 2.dp)
+            )
+        }
+    }
+}
+
+/** Reads as a row of the list rather than a button beside it, so the list visibly continues into it. */
+@Composable
+private fun AddAccountRow(onClick: () -> Unit, modifier: Modifier = Modifier) {
+    val accent = MaterialTheme.colorScheme.primary
+    Row(
+        modifier
+            .fillMaxWidth()
+            .clip(MaterialTheme.shapes.small)
+            .clickable(onClick = onClick)
+            .padding(vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Box(
+            Modifier
+                .size(24.dp)
+                .clip(CircleShape)
+                .background(accent.copy(alpha = 0.15f)),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(Icons.Filled.Add, contentDescription = null, tint = accent, modifier = Modifier.size(16.dp))
+        }
+        Text(
+            stringResource(R.string.profile_add_account),
+            style = MaterialTheme.typography.bodyLarge,
+            color = accent,
+            modifier = Modifier.padding(start = 12.dp)
+        )
+    }
+}
+
 @Composable
 private fun ProfileCard(
     name: String,
     onNameChange: (String) -> Unit,
     currencyCode: String,
-    accountCount: Int,
     onOpenProfile: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -268,7 +351,7 @@ private fun ProfileCard(
                     modifier = Modifier.fillMaxWidth()
                 )
                 Text(
-                    "$currencyCode · " + pluralStringResource(R.plurals.settings_profile_accounts, accountCount, accountCount),
+                    currencyCode,
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(top = 6.dp, start = 4.dp)
